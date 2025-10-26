@@ -30,6 +30,8 @@ fun CompanyDashboard(onLogout: () -> Unit) {
     var salary by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var postedCount by remember { mutableStateOf(0) }
+    var showNotifications by remember { mutableStateOf(false) }
+    val unreadCount by remember { mutableStateOf(4) }
 
     val handlePost = {
         if (jobTitle.isNotBlank() && company.isNotBlank()) {
@@ -75,27 +77,16 @@ fun CompanyDashboard(onLogout: () -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 18.dp, vertical = 20.dp),
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "🏢", fontSize = 26.sp)
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Company Portal",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Post internship opportunities",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 11.sp
-                        )
-                    }
-                }
+                Text(
+                    text = "CareerMatch",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
                 IconButton(
                     onClick = onLogout,
@@ -148,18 +139,65 @@ fun CompanyDashboard(onLogout: () -> Unit) {
                                 )
                             }
 
-                            IconButton(
-                                onClick = { /* Profile */ },
-                                modifier = Modifier.background(
-                                    Color(0xFFF5F5F5),
-                                    RoundedCornerShape(50)
-                                )
-                            ) {
-                                Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = "Profile",
-                                    tint = Color(0xFF2196F3)
-                                )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                // Notification Button with Badge
+                                Box {
+                                    IconButton(
+                                        onClick = { showNotifications = true },
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .background(
+                                                Color(0xFFF5F5F5),
+                                                RoundedCornerShape(50)
+                                            )
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Notifications,
+                                            contentDescription = "Notifications",
+                                            tint = Color(0xFF666666),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    // Red Badge
+                                    if (unreadCount > 0) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .align(Alignment.TopEnd)
+                                                .background(Color(0xFFFF5252), RoundedCornerShape(50))
+                                                .padding(2.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = if (unreadCount > 9) "9+" else unreadCount.toString(),
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Profile Button
+                                IconButton(
+                                    onClick = {
+                                        Toast.makeText(context, "Profile", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(
+                                            Color(0xFFF5F5F5),
+                                            RoundedCornerShape(50)
+                                        )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = "Profile",
+                                        tint = Color(0xFF666666),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -365,6 +403,155 @@ fun CompanyDashboard(onLogout: () -> Unit) {
                     }
                 }
             }
+        }
+
+        // Notifications Dialog
+        if (showNotifications) {
+            AlertDialog(
+                onDismissRequest = { showNotifications = false },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(16.dp),
+                title = {
+                    Column {
+                        Text(
+                            "Notifications",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF333333)
+                        )
+                        if (unreadCount > 0) {
+                            Text(
+                                "$unreadCount unread",
+                                fontSize = 13.sp,
+                                color = Color(0xFF999999),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+                },
+                text = {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.heightIn(max = 400.dp)
+                    ) {
+                        item {
+                            CompanyNotificationItem(
+                                title = "New Application",
+                                message = "John Doe applied for Android Developer position",
+                                time = "1h ago",
+                                isNew = true
+                            )
+                        }
+                        item {
+                            CompanyNotificationItem(
+                                title = "Post Performance",
+                                message = "Web Developer post has 45 views and 12 applications",
+                                time = "3h ago",
+                                isNew = true
+                            )
+                        }
+                        item {
+                            CompanyNotificationItem(
+                                title = "Profile Featured",
+                                message = "Your company profile is now on the homepage",
+                                time = "5h ago",
+                                isNew = true
+                            )
+                        }
+                        item {
+                            CompanyNotificationItem(
+                                title = "Candidate Message",
+                                message = "Sarah asked about the Data Analyst position",
+                                time = "1d ago",
+                                isNew = true
+                            )
+                        }
+                        item {
+                            CompanyNotificationItem(
+                                title = "Post Expiring Soon",
+                                message = "iOS Developer post will expire in 3 days",
+                                time = "2d ago",
+                                isNew = false
+                            )
+                        }
+                        item {
+                            CompanyNotificationItem(
+                                title = "Milestone Reached",
+                                message = "100+ applications received this month",
+                                time = "3d ago",
+                                isNew = false
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showNotifications = false }) {
+                        Text("Close", color = Color(0xFF2196F3), fontWeight = FontWeight.Medium)
+                    }
+                },
+                dismissButton = {
+                    if (unreadCount > 0) {
+                        TextButton(onClick = {
+                            Toast.makeText(context, "Marked as read", Toast.LENGTH_SHORT).show()
+                            showNotifications = false
+                        }) {
+                            Text("Mark as read", color = Color(0xFF999999))
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+// CompanyNotificationItem fonksiyonu - Dosyanın SONUNDA!
+@Composable
+fun CompanyNotificationItem(
+    title: String,
+    message: String,
+    time: String,
+    isNew: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = if (isNew) Color(0xFFF5F5F5) else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Dot indicator
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(
+                    color = if (isNew) Color(0xFF2196F3) else Color(0xFFE0E0E0),
+                    shape = RoundedCornerShape(50)
+                )
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = if (isNew) FontWeight.SemiBold else FontWeight.Normal,
+                color = Color(0xFF333333)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = message,
+                fontSize = 13.sp,
+                color = Color(0xFF666666),
+                lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = time,
+                fontSize = 11.sp,
+                color = Color(0xFF999999)
+            )
         }
     }
 }

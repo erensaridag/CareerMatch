@@ -26,6 +26,8 @@ fun StudentDashboard(onLogout: () -> Unit) {
     val context = LocalContext.current
     var searchText by remember { mutableStateOf("") }
     val internships = remember { getSampleInternships() }
+    var showNotifications by remember { mutableStateOf(false) }
+    val unreadCount by remember { mutableStateOf(3) }
 
     // Filter internships based on search text
     val filteredInternships = remember(searchText, internships) {
@@ -62,23 +64,12 @@ fun StudentDashboard(onLogout: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "🎓", fontSize = 26.sp)
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Student Portal",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Find your dream internship",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 11.sp
-                        )
-                    }
-                }
+                Text(
+                    text = "CareerMatch",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
                 IconButton(
                     onClick = onLogout,
@@ -99,14 +90,14 @@ fun StudentDashboard(onLogout: () -> Unit) {
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(20.dp)
+                        .padding(18.dp)
                 ) {
                     // Welcome Section
                     Row(
@@ -117,34 +108,81 @@ fun StudentDashboard(onLogout: () -> Unit) {
                         Column {
                             Text(
                                 text = "Welcome back! 👋",
-                                fontSize = 22.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF333333)
                             )
                             Text(
                                 text = "Ready to apply?",
-                                fontSize = 14.sp,
+                                fontSize = 13.sp,
                                 color = Color(0xFF666666),
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.padding(top = 3.dp)
                             )
                         }
 
-                        IconButton(
-                            onClick = { /* Profile */ },
-                            modifier = Modifier.background(
-                                Color(0xFFF5F5F5),
-                                RoundedCornerShape(50)
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Profile",
-                                tint = Color(0xFF4CAF50)
-                            )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Notification Button with Badge
+                            Box {
+                                IconButton(
+                                    onClick = { showNotifications = true },
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(
+                                            Color(0xFFF5F5F5),
+                                            RoundedCornerShape(50)
+                                        )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Notifications,
+                                        contentDescription = "Notifications",
+                                        tint = Color(0xFF666666),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                // Red Badge
+                                if (unreadCount > 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .align(Alignment.TopEnd)
+                                            .background(Color(0xFFFF5252), RoundedCornerShape(50))
+                                            .padding(2.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = if (unreadCount > 9) "9+" else unreadCount.toString(),
+                                            color = Color.White,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Profile Button
+                            IconButton(
+                                onClick = {
+                                    Toast.makeText(context, "Profile", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(
+                                        Color(0xFFF5F5F5),
+                                        RoundedCornerShape(50)
+                                    )
+                            ) {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = "Profile",
+                                    tint = Color(0xFF666666),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Search Bar
                     OutlinedTextField(
@@ -168,33 +206,33 @@ fun StudentDashboard(onLogout: () -> Unit) {
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Stats Row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Card(
                             modifier = Modifier.weight(1f),
                             colors = CardDefaults.cardColors(
                                 containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Column(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
                                     text = "${filteredInternships.size}",
-                                    fontSize = 24.sp,
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF4CAF50)
                                 )
                                 Text(
                                     text = "Available",
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     color = Color(0xFF666666)
                                 )
                             }
@@ -205,38 +243,38 @@ fun StudentDashboard(onLogout: () -> Unit) {
                             colors = CardDefaults.cardColors(
                                 containerColor = Color(0xFF2196F3).copy(alpha = 0.1f)
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Column(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
                                     text = "0",
-                                    fontSize = 24.sp,
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF2196F3)
                                 )
                                 Text(
                                     text = "Applied",
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     color = Color(0xFF666666)
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Section Title
                     Text(
                         text = "Available Internships",
-                        fontSize = 18.sp,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF333333)
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     // Internship List
                     if (filteredInternships.isEmpty()) {
@@ -259,8 +297,8 @@ fun StudentDashboard(onLogout: () -> Unit) {
                         }
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(bottom = 12.dp)
                         ) {
                             items(filteredInternships) { internship ->
                                 InternshipCard(
@@ -278,6 +316,147 @@ fun StudentDashboard(onLogout: () -> Unit) {
                     }
                 }
             }
+        }
+
+        // Notifications Dialog
+        if (showNotifications) {
+            AlertDialog(
+                onDismissRequest = { showNotifications = false },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(16.dp),
+                title = {
+                    Column {
+                        Text(
+                            "Notifications",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF333333)
+                        )
+                        if (unreadCount > 0) {
+                            Text(
+                                "$unreadCount unread",
+                                fontSize = 13.sp,
+                                color = Color(0xFF999999),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+                },
+                text = {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.heightIn(max = 400.dp)
+                    ) {
+                        item {
+                            NotificationItem(
+                                title = "Application Accepted",
+                                message = "TechCorp accepted your application for Android Developer",
+                                time = "2h ago",
+                                isNew = true
+                            )
+                        }
+                        item {
+                            NotificationItem(
+                                title = "New Internship Match",
+                                message = "Web Developer at WebStudio matches your profile",
+                                time = "5h ago",
+                                isNew = true
+                            )
+                        }
+                        item {
+                            NotificationItem(
+                                title = "Interview Scheduled",
+                                message = "Interview with DataTech tomorrow at 10:00 AM",
+                                time = "1d ago",
+                                isNew = true
+                            )
+                        }
+                        item {
+                            NotificationItem(
+                                title = "Message Received",
+                                message = "DesignCo sent you a message about your portfolio",
+                                time = "2d ago",
+                                isNew = false
+                            )
+                        }
+                        item {
+                            NotificationItem(
+                                title = "Profile Views",
+                                message = "5 companies viewed your profile this week",
+                                time = "3d ago",
+                                isNew = false
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showNotifications = false }) {
+                        Text("Close", color = Color(0xFF4CAF50), fontWeight = FontWeight.Medium)
+                    }
+                },
+                dismissButton = {
+                    if (unreadCount > 0) {
+                        TextButton(onClick = {
+                            Toast.makeText(context, "Marked as read", Toast.LENGTH_SHORT).show()
+                            showNotifications = false
+                        }) {
+                            Text("Mark as read", color = Color(0xFF999999))
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun NotificationItem(
+    title: String,
+    message: String,
+    time: String,
+    isNew: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = if (isNew) Color(0xFFF5F5F5) else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Dot indicator
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(
+                    color = if (isNew) Color(0xFF4CAF50) else Color(0xFFE0E0E0),
+                    shape = RoundedCornerShape(50)
+                )
+                .align(Alignment.Top)
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = if (isNew) FontWeight.SemiBold else FontWeight.Normal,
+                color = Color(0xFF333333)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = message,
+                fontSize = 13.sp,
+                color = Color(0xFF666666),
+                lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = time,
+                fontSize = 11.sp,
+                color = Color(0xFF999999)
+            )
         }
     }
 }
