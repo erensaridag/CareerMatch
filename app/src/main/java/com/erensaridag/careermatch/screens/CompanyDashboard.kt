@@ -19,10 +19,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.erensaridag.careermatch.firebase.AuthManager
+import com.erensaridag.careermatch.firebase.InternshipManager
+import com.erensaridag.careermatch.firebase.ApplicationManager
+import kotlinx.coroutines.launch
 
 @Composable
-fun CompanyDashboard(onLogout: () -> Unit) {
+fun CompanyDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val authManager = remember { AuthManager() }
+    val internshipManager = remember { InternshipManager() }
+    val applicationManager = remember { ApplicationManager() }
+
     var jobTitle by remember { mutableStateOf("") }
     var company by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
@@ -32,24 +41,98 @@ fun CompanyDashboard(onLogout: () -> Unit) {
     var postedCount by remember { mutableStateOf(0) }
     var showNotifications by remember { mutableStateOf(false) }
     val unreadCount by remember { mutableStateOf(4) }
+    var isPosting by remember { mutableStateOf(false) }
+    var applicantsCount by remember { mutableStateOf(0) }
+
+    // Load company stats
+    LaunchedEffect(Unit) {
+        scope.launch {
+            authManager.getCurrentUser()?.uid?.let { userId ->
+                // Get company name from user data
+                val userDataResult = authManager.getUserData(userId)
+                userDataResult.fold(
+                    onSuccess = { userData ->
+                        company = userData["name"] as? String ?: ""
+                    },
+                    onFailure = { }
+                )
+
+                // Get posted internships count
+                val internshipsResult = internshipManager.getCompanyInternships(userId)
+                internshipsResult.fold(
+                    onSuccess = { internships ->
+                        postedCount = internships.size
+                    },
+                    onFailure = { }
+                )
+
+                // Get pending applications count
+                val applicationsResult = applicationManager.getPendingApplicationsCount(userId)
+                applicationsResult.fold(
+                    onSuccess = { count ->
+                        applicantsCount = count
+                    },
+                    onFailure = { }
+                )
+            }
+        }
+    }
 
     val handlePost = {
         if (jobTitle.isNotBlank() && company.isNotBlank()) {
-            Toast.makeText(
-                context,
-                "Internship '${jobTitle}' posted successfully! 🎉",
-                Toast.LENGTH_LONG
-            ).show()
+            isPosting = true
+            scope.launch {
+                val userId = authManager.getCurrentUser()?.uid
+                android.util.Log.d("CompanyDashboard", "Current user ID: $userId")
 
-            postedCount++
+                if (userId != null) {
+                    android.util.Log.d("CompanyDashboard", "Posting internship: $jobTitle")
 
-            // Clear form after posting
-            jobTitle = ""
-            company = ""
-            location = ""
-            duration = ""
-            salary = ""
-            description = ""
+                    val result = internshipManager.addInternship(
+                        title = jobTitle,
+                        company = company,
+                        location = location.ifBlank { "Not specified" },
+                        duration = duration.ifBlank { "Not specified" },
+                        salary = salary.ifBlank { "Negotiable" },
+                        description = description.ifBlank { "No description" },
+                        companyId = userId
+                    )
+
+                    result.fold(
+                        onSuccess = { docId ->
+                            isPosting = false
+                            postedCount++
+                            android.util.Log.d("CompanyDashboard", "Success! Doc ID: $docId")
+                            Toast.makeText(
+                                context,
+                                "Internship '${jobTitle}' posted successfully! 🎉",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            // Clear form
+                            jobTitle = ""
+                            location = ""
+                            duration = ""
+                            salary = ""
+                            description = ""
+                        },
+                        onFailure = { error ->
+                            isPosting = false
+                            val errorMsg = error.message ?: "Unknown error"
+                            android.util.Log.e("CompanyDashboard", "Failed to post: $errorMsg", error)
+                            Toast.makeText(
+                                context,
+                                "Failed: $errorMsg",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    )
+                } else {
+                    isPosting = false
+                    android.util.Log.e("CompanyDashboard", "User not logged in!")
+                    Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show()
+                }
+            }
         } else {
             Toast.makeText(
                 context,
@@ -181,9 +264,7 @@ fun CompanyDashboard(onLogout: () -> Unit) {
 
                                 // Profile Button
                                 IconButton(
-                                    onClick = {
-                                        Toast.makeText(context, "Profile", Toast.LENGTH_SHORT).show()
-                                    },
+                                    onClick = onNavigateToProfile,
                                     modifier = Modifier
                                         .size(44.dp)
                                         .background(
@@ -245,7 +326,7 @@ fun CompanyDashboard(onLogout: () -> Unit) {
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Text(
-                                        text = "0",
+                                        text = "$applicantsCount",
                                         fontSize = 24.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF4CAF50)
@@ -370,26 +451,33 @@ fun CompanyDashboard(onLogout: () -> Unit) {
 
                     item {
                         Button(
-                            onClick = handlePost,
+                            onClick = { handlePost() },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF2196F3),
                                 disabledContainerColor = Color(0xFFE0E0E0)
                             ),
                             shape = RoundedCornerShape(12.dp),
-                            enabled = jobTitle.isNotBlank() && company.isNotBlank()
+                            enabled = !isPosting && jobTitle.isNotBlank() && company.isNotBlank()
                         ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Post",
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Post Internship",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            if (isPosting) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "Post",
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Post Internship",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 

@@ -134,6 +134,19 @@ class ApplicationManager {
         }
     }
 
+    // Başvuruyu sil (reddet)
+    suspend fun removeApplication(applicationId: String): Result<Unit> {
+        return try {
+            firestore.collection("applications")
+                .document(applicationId)
+                .delete()
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // Başvuru sayısını al
     suspend fun getApplicationCount(studentId: String): Result<Int> {
         return try {
@@ -148,7 +161,7 @@ class ApplicationManager {
         }
     }
 
-    // Bekleyen başvuru sayısını al
+    // Bekleyen başvuru sayısını al (şirket için)
     suspend fun getPendingApplicationsCount(companyId: String): Result<Int> {
         return try {
             // Önce şirkete ait stajları bul
@@ -176,6 +189,68 @@ class ApplicationManager {
             }
 
             Result.success(totalPending)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Başvurucu detaylarını getir (Öğrenci bilgileriyle birlikte)
+    suspend fun getApplicantDetails(studentId: String): Result<Map<String, Any>> {
+        return try {
+            val userDoc = firestore.collection("users")
+                .document(studentId)
+                .get()
+                .await()
+
+            if (userDoc.exists()) {
+                Result.success(userDoc.data ?: emptyMap())
+            } else {
+                Result.failure(Exception("User not found"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Staja ait başvuruları detaylarıyla getir (Şirket için)
+    suspend fun getInternshipApplicantsWithDetails(internshipId: String): Result<List<Map<String, Any>>> {
+        return try {
+            val applicationsSnapshot = firestore.collection("applications")
+                .whereEqualTo("internshipId", internshipId)
+                .orderBy("appliedAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            val applicantsWithDetails = applicationsSnapshot.documents.mapNotNull { appDoc ->
+                try {
+                    val studentId = appDoc.getString("studentId") ?: return@mapNotNull null
+
+                    // Öğrenci bilgilerini çek
+                    val userDoc = firestore.collection("users")
+                        .document(studentId)
+                        .get()
+                        .await()
+
+                    if (userDoc.exists()) {
+                        mapOf(
+                            "applicationId" to appDoc.id,
+                            "studentId" to studentId,
+                            "studentName" to (userDoc.getString("name") ?: "Unknown"),
+                            "studentEmail" to (userDoc.getString("email") ?: ""),
+                            "studentPhone" to (userDoc.getString("phone") ?: ""),
+                            "studentSkills" to (userDoc.getString("skills") ?: ""),
+                            "appliedAt" to (appDoc.getLong("appliedAt") ?: 0L),
+                            "status" to (appDoc.getString("status") ?: "pending")
+                        )
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            Result.success(applicantsWithDetails)
         } catch (e: Exception) {
             Result.failure(e)
         }

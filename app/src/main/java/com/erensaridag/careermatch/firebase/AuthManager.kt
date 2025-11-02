@@ -12,8 +12,22 @@ class AuthManager {
     // Mevcut kullanıcıyı al
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
-    // Kullanıcı giriş yapmış mı?
+    // Kullanıcı giriş yapmış mı ve session aktif mi?
     fun isUserLoggedIn(): Boolean = auth.currentUser != null
+
+    // Otomatik giriş için kullanıcı tipini al
+    suspend fun getCurrentUserType(): String? {
+        val userId = auth.currentUser?.uid ?: return null
+        return try {
+            val userDoc = firestore.collection("users")
+                .document(userId)
+                .get()
+                .await()
+            userDoc.getString("userType")
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     // Email ve şifre ile kayıt ol
     suspend fun signUp(

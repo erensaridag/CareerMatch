@@ -1,5 +1,6 @@
 package com.erensaridag.careermatch.screens
 
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -15,10 +16,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -27,16 +28,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.erensaridag.careermatch.firebase.AuthManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(onLoginSuccess: (String) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val authManager = remember { AuthManager() }
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
     var rememberMe by remember { mutableStateOf(false) }
-    var isLogin by remember { mutableStateOf(true) } // true = Login, false = Register
+    var isLogin by remember { mutableStateOf(true) }
     var showForgotPassword by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     // Animation states
     val infiniteTransition = rememberInfiniteTransition(label = "background")
@@ -103,8 +112,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
             // Main Card
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White.copy(alpha = 0.95f)
                 ),
@@ -113,7 +124,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(28.dp),
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Login / Register Toggle
@@ -128,7 +139,11 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Button(
-                            onClick = { isLogin = true },
+                            onClick = {
+                                isLogin = true
+                                password = ""
+                                name = ""
+                            },
                             modifier = Modifier.weight(1f).height(44.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isLogin) Color(0xFF1976D2) else Color.Transparent,
@@ -143,7 +158,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         }
 
                         Button(
-                            onClick = { isLogin = false },
+                            onClick = {
+                                isLogin = false
+                                password = ""
+                            },
                             modifier = Modifier.weight(1f).height(44.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (!isLogin) Color(0xFF1976D2) else Color.Transparent,
@@ -158,7 +176,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     // User Type Selector
                     Text(
@@ -177,9 +195,9 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         Card(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(90.dp)
+                                .height(72.dp)
                                 .clickable { selectedTab = 0 },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (selectedTab == 0)
                                     Color(0xFF4CAF50)
@@ -193,18 +211,18 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(12.dp),
+                                    .padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
                                     text = "🎓",
-                                    fontSize = 28.sp
+                                    fontSize = 26.sp
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "Student",
-                                    fontSize = 13.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (selectedTab == 0) Color.White else Color(0xFF666666)
                                 )
@@ -214,9 +232,9 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         Card(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(90.dp)
+                                .height(72.dp)
                                 .clickable { selectedTab = 1 },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (selectedTab == 1)
                                     Color(0xFF2196F3)
@@ -230,18 +248,18 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(12.dp),
+                                    .padding(10.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
                                     text = "🏢",
-                                    fontSize = 28.sp
+                                    fontSize = 26.sp
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "Company",
-                                    fontSize = 13.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (selectedTab == 1) Color.White else Color(0xFF666666)
                                 )
@@ -249,7 +267,31 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Name Field (only for register)
+                    AnimatedVisibility(visible = !isLogin) {
+                        Column {
+                            OutlinedTextField(
+                                value = name,
+                                onValueChange = { name = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Full Name") },
+                                placeholder = { Text("Enter your full name") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Person, contentDescription = "Name")
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFF1976D2),
+                                    focusedLabelColor = Color(0xFF1976D2),
+                                    cursorColor = Color(0xFF1976D2)
+                                ),
+                                singleLine = true
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                        }
+                    }
 
                     // Email Field
                     OutlinedTextField(
@@ -268,10 +310,11 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             focusedLabelColor = Color(0xFF1976D2),
                             cursorColor = Color(0xFF1976D2)
                         ),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLoading
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Password Field
                     OutlinedTextField(
@@ -302,7 +345,8 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             focusedLabelColor = Color(0xFF1976D2),
                             cursorColor = Color(0xFF1976D2)
                         ),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLoading
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -334,7 +378,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
                             Text(
                                 text = "Forgot Password?",
-                                fontSize = 11.sp,
+                                fontSize = 14.sp,
                                 color = Color(0xFF1976D2),
                                 fontWeight = FontWeight.Medium,
                                 textDecoration = TextDecoration.Underline,
@@ -345,19 +389,59 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     // Login/Register Button
                     Button(
                         onClick = {
-                            // Seçili tab'a göre user type belirlenir
+                            if (email.isBlank() || password.isBlank()) {
+                                Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            if (!isLogin && name.isBlank()) {
+                                Toast.makeText(context, "Please enter your name", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            isLoading = true
                             val userType = if (selectedTab == 0) "Student" else "Company"
 
-                            // Email ve password kontrolü
-                            if (email.isNotBlank() && password.isNotBlank()) {
-                                // Student seçiliyse -> Student ekranı
-                                // Company seçiliyse -> Company ekranı
-                                onLoginSuccess(userType)
+                            scope.launch {
+                                try {
+                                    if (isLogin) {
+                                        // Login
+                                        val result = authManager.signIn(email, password)
+                                        result.fold(
+                                            onSuccess = { (userId, savedUserType) ->
+                                                isLoading = false
+                                                Toast.makeText(context, "Welcome back!", Toast.LENGTH_SHORT).show()
+                                                onLoginSuccess(savedUserType)
+                                            },
+                                            onFailure = { error ->
+                                                isLoading = false
+                                                Toast.makeText(context, "Login failed: ${error.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                        )
+                                    } else {
+                                        // Register
+                                        val result = authManager.signUp(email, password, name, userType)
+                                        result.fold(
+                                            onSuccess = { userId ->
+                                                isLoading = false
+                                                Toast.makeText(context, "Account created successfully!", Toast.LENGTH_SHORT).show()
+                                                onLoginSuccess(userType)
+                                            },
+                                            onFailure = { error ->
+                                                isLoading = false
+                                                Toast.makeText(context, "Registration failed: ${error.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    isLoading = false
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
                             }
                         },
                         modifier = Modifier
@@ -368,34 +452,29 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             disabledContainerColor = Color(0xFFE0E0E0)
                         ),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = email.isNotBlank() && password.isNotBlank()
+                        enabled = !isLoading && email.isNotBlank() && password.isNotBlank() && (isLogin || name.isNotBlank())
                     ) {
-                        Text(
-                            text = if (isLogin) "Sign In" else "Create Account",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Text(
+                                text = if (isLogin) "Sign In" else "Create Account",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Social Login Divider
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-
-                    }
-
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // respect
+            // Terms and Privacy
             Text(
-                text = "Made By Khein",
+                text = "By continuing, you agree to our Terms of Service and Privacy Policy",
                 fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -405,6 +484,9 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
         // Forgot Password Dialog
         if (showForgotPassword) {
+            var resetEmail by remember { mutableStateOf(email) }
+            var isResetting by remember { mutableStateOf(false) }
+
             AlertDialog(
                 onDismissRequest = { showForgotPassword = false },
                 title = { Text("Reset Password") },
@@ -413,26 +495,59 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         Text("Enter your email address and we'll send you a link to reset your password.")
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
+                            value = resetEmail,
+                            onValueChange = { resetEmail = it },
                             label = { Text("Email") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            enabled = !isResetting
                         )
                     }
                 },
                 confirmButton = {
                     Button(
-                        onClick = { showForgotPassword = false },
+                        onClick = {
+                            if (resetEmail.isBlank()) {
+                                Toast.makeText(context, "Please enter your email", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            isResetting = true
+                            scope.launch {
+                                val result = authManager.sendPasswordResetEmail(resetEmail)
+                                result.fold(
+                                    onSuccess = {
+                                        isResetting = false
+                                        Toast.makeText(context, "Password reset email sent!", Toast.LENGTH_LONG).show()
+                                        showForgotPassword = false
+                                    },
+                                    onFailure = { error ->
+                                        isResetting = false
+                                        Toast.makeText(context, "Error: ${error.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                )
+                            }
+                        },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF1976D2)
-                        )
+                        ),
+                        enabled = !isResetting
                     ) {
-                        Text("Send Reset Link")
+                        if (isResetting) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Text("Send Reset Link")
+                        }
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showForgotPassword = false }) {
+                    TextButton(
+                        onClick = { showForgotPassword = false },
+                        enabled = !isResetting
+                    ) {
                         Text("Cancel")
                     }
                 }

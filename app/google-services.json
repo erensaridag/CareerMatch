@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "122217203827",
+    "project_id": "careermatch-e1989",
+    "storage_bucket": "careermatch-e1989.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:122217203827:android:d64769b45d3ee805bac206",
+        "android_client_info": {
+          "package_name": "com.erensaridag.careermatch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQQ3IbpPo0oH9fM5My9fHjxSkASxNf-Tk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

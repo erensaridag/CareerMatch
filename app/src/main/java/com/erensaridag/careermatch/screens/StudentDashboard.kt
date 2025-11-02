@@ -19,15 +19,53 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.erensaridag.careermatch.components.InternshipCard
-import com.erensaridag.careermatch.data.getSampleInternships
+import com.erensaridag.careermatch.data.Internship
+import com.erensaridag.careermatch.firebase.AuthManager
+import com.erensaridag.careermatch.firebase.InternshipManager
+import com.erensaridag.careermatch.firebase.ApplicationManager
+import kotlinx.coroutines.launch
 
 @Composable
-fun StudentDashboard(onLogout: () -> Unit) {
+fun StudentDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val authManager = remember { AuthManager() }
+    val internshipManager = remember { InternshipManager() }
+    val applicationManager = remember { ApplicationManager() }
+
     var searchText by remember { mutableStateOf("") }
-    val internships = remember { getSampleInternships() }
+    var internships by remember { mutableStateOf<List<Internship>>(emptyList()) }
     var showNotifications by remember { mutableStateOf(false) }
     val unreadCount by remember { mutableStateOf(3) }
+    var isLoading by remember { mutableStateOf(true) }
+    var applicationCount by remember { mutableStateOf(0) }
+
+    // Load internships on start
+    LaunchedEffect(Unit) {
+        scope.launch {
+            isLoading = true
+            val result = internshipManager.getAllInternships()
+            result.fold(
+                onSuccess = { loadedInternships ->
+                    internships = loadedInternships
+                    isLoading = false
+                },
+                onFailure = { error ->
+                    isLoading = false
+                    Toast.makeText(context, "Failed to load internships: ${error.message}", Toast.LENGTH_SHORT).show()
+                }
+            )
+
+            // Load application count
+            authManager.getCurrentUser()?.uid?.let { userId ->
+                val countResult = applicationManager.getApplicationCount(userId)
+                countResult.fold(
+                    onSuccess = { count -> applicationCount = count },
+                    onFailure = { }
+                )
+            }
+        }
+    }
 
     // Filter internships based on search text
     val filteredInternships = remember(searchText, internships) {
@@ -126,7 +164,7 @@ fun StudentDashboard(onLogout: () -> Unit) {
                                 IconButton(
                                     onClick = { showNotifications = true },
                                     modifier = Modifier
-                                        .size(44.dp)
+                                        .size(40.dp)
                                         .background(
                                             Color(0xFFF5F5F5),
                                             RoundedCornerShape(50)
@@ -151,10 +189,10 @@ fun StudentDashboard(onLogout: () -> Unit) {
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = if (unreadCount > 9) "9+" else unreadCount.toString(),
+                                            text = if (unreadCount > 9) "3+" else unreadCount.toString(),
                                             color = Color.White,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 5.sp,
+                                            fontWeight = FontWeight.Medium
                                         )
                                     }
                                 }
@@ -163,7 +201,7 @@ fun StudentDashboard(onLogout: () -> Unit) {
                             // Profile Button
                             IconButton(
                                 onClick = {
-                                    Toast.makeText(context, "Profile", Toast.LENGTH_SHORT).show()
+                                    onNavigateToProfile()
                                 },
                                 modifier = Modifier
                                     .size(44.dp)
@@ -250,7 +288,7 @@ fun StudentDashboard(onLogout: () -> Unit) {
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "0",
+                                    text = "$applicationCount",
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF2196F3)
@@ -277,7 +315,14 @@ fun StudentDashboard(onLogout: () -> Unit) {
                     Spacer(modifier = Modifier.height(10.dp))
 
                     // Internship List
-                    if (filteredInternships.isEmpty()) {
+                    if (isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFF4CAF50))
+                        }
+                    } else if (filteredInternships.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -304,11 +349,34 @@ fun StudentDashboard(onLogout: () -> Unit) {
                                 InternshipCard(
                                     internship = internship,
                                     onApply = {
-                                        Toast.makeText(
-                                            context,
-                                            "Applied to ${internship.title} at ${internship.company}! ✅",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        scope.launch {
+                                            val userId = authManager.getCurrentUser()?.uid
+                                            if (userId != null) {
+                                                val result = applicationManager.applyToInternship(
+                                                    studentId = userId,
+                                                    internshipId = internship.id.toString(),
+                                                    internshipTitle = internship.title,
+                                                    companyName = internship.company
+                                                )
+                                                result.fold(
+                                                    onSuccess = {
+                                                        applicationCount++
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Applied to ${internship.title} at ${internship.company}! ✅",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    },
+                                                    onFailure = { error ->
+                                                        Toast.makeText(
+                                                            context,
+                                                            error.message ?: "Failed to apply",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
                                 )
                             }
