@@ -211,18 +211,18 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(10.dp),
+                                    .padding(8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
                                     text = "🎓",
-                                    fontSize = 26.sp
+                                    fontSize = 23.sp
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "Student",
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (selectedTab == 0) Color.White else Color(0xFF666666)
                                 )
@@ -248,18 +248,18 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(10.dp),
+                                    .padding(8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
                                     text = "🏢",
-                                    fontSize = 26.sp
+                                    fontSize = 23.sp
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "Company",
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (selectedTab == 1) Color.White else Color(0xFF666666)
                                 )
@@ -371,14 +371,14 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 )
                                 Text(
                                     "Remember me",
-                                    fontSize = 14.sp,
+                                    fontSize = 10.sp,
                                     color = Color(0xFF666666)
                                 )
                             }
 
                             Text(
                                 text = "Forgot Password?",
-                                fontSize = 14.sp,
+                                fontSize = 10.sp,
                                 color = Color(0xFF1976D2),
                                 fontWeight = FontWeight.Medium,
                                 textDecoration = TextDecoration.Underline,
@@ -472,9 +472,9 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Terms and Privacy
+            // mbKhein
             Text(
-                text = "By continuing, you agree to our Terms of Service and Privacy Policy",
+                text = "made by khein",
                 fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,

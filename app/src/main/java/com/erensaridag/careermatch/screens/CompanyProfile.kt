@@ -37,7 +37,6 @@ fun CompanyProfile(onBack: () -> Unit) {
     var isEditing by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
 
-    // Load company data
     LaunchedEffect(Unit) {
         scope.launch {
             val userId = authManager.getCurrentUser()?.uid
@@ -76,37 +75,48 @@ fun CompanyProfile(onBack: () -> Unit) {
             )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top Bar
+            // Top Bar - Düzeltilmiş
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.background(
-                        Color.White.copy(alpha = 0.2f),
-                        RoundedCornerShape(50)
-                    )
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(
+                            Color.White.copy(alpha = 0.2f),
+                            RoundedCornerShape(50)
+                        )
                 ) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
+
                 Text(
                     "Company Profile",
-                    fontSize = 22.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
+
+                // Placeholder için boş space
+                Box(modifier = Modifier.size(36.dp))
             }
 
             // Content Card
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 if (isLoading) {
@@ -120,18 +130,17 @@ fun CompanyProfile(onBack: () -> Unit) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         item {
-                            // Avatar & Name
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(100.dp)
+                                        .size(80.dp)
                                         .background(
                                             brush = Brush.linearGradient(
                                                 colors = listOf(Color(0xFF2196F3), Color(0xFF1976D2))
@@ -142,21 +151,21 @@ fun CompanyProfile(onBack: () -> Unit) {
                                 ) {
                                     Text(
                                         text = name.firstOrNull()?.uppercase() ?: "C",
-                                        fontSize = 40.sp,
+                                        fontSize = 36.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
                                 Text(
                                     text = name.ifBlank { "Company" },
-                                    fontSize = 24.sp,
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF333333)
                                 )
                                 Text(
                                     text = email,
-                                    fontSize = 14.sp,
+                                    fontSize = 13.sp,
                                     color = Color(0xFF666666)
                                 )
                             }
@@ -174,12 +183,19 @@ fun CompanyProfile(onBack: () -> Unit) {
                             ) {
                                 Text(
                                     "Company Information",
-                                    fontSize = 18.sp,
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFF333333)
                                 )
-                                TextButton(onClick = { isEditing = !isEditing }) {
-                                    Text(if (isEditing) "Cancel" else "Edit")
+                                TextButton(
+                                    onClick = { isEditing = !isEditing },
+                                    modifier = Modifier.height(32.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        if (isEditing) "Cancel" else "Edit",
+                                        fontSize = 13.sp
+                                    )
                                 }
                             }
                         }
@@ -266,27 +282,27 @@ fun CompanyProfile(onBack: () -> Unit) {
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(56.dp),
+                                        .height(48.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF2196F3)
                                     ),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     enabled = !isSaving
                                 ) {
                                     if (isSaving) {
                                         CircularProgressIndicator(
                                             color = Color.White,
-                                            modifier = Modifier.size(24.dp)
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     } else {
-                                        Text("Save Changes", fontWeight = FontWeight.Bold)
+                                        Text("Save Changes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                     }
                                 }
                             }
                         }
 
                         item {
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
@@ -308,25 +324,33 @@ fun CompanyProfileField(
             text = label,
             fontSize = 12.sp,
             color = Color(0xFF666666),
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 6.dp)
         )
-        Spacer(modifier = Modifier.height(4.dp))
+
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             leadingIcon = {
-                Icon(icon, contentDescription = null, tint = Color(0xFF2196F3))
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = Color(0xFF2196F3),
+                    modifier = Modifier.size(18.dp)
+                )
             },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(10.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 disabledBorderColor = Color(0xFFE0E0E0),
                 disabledTextColor = Color(0xFF333333),
                 disabledLeadingIconColor = Color(0xFF999999),
-                focusedBorderColor = Color(0xFF2196F3)
+                focusedBorderColor = Color(0xFF2196F3),
+                unfocusedBorderColor = Color(0xFFE0E0E0)
             ),
-            singleLine = true
+            singleLine = true,
+            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 14.sp)
         )
     }
 }

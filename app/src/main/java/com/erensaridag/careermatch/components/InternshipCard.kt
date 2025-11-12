@@ -61,7 +61,6 @@ fun InternshipCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Location and Duration
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
