@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.erensaridag.careermatch.firebase.AuthManager
+import com.erensaridag.careermatch.ui.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -54,7 +55,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                     },
                     onFailure = {
                         isLoading = false
-                        Toast.makeText(context, "Failed to load profile", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Profil yüklenemedi", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -67,15 +68,14 @@ fun CompanyProfile(onBack: () -> Unit) {
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF2196F3),
-                        Color(0xFF1976D2),
-                        Color(0xFF0D47A1)
+                        PrimaryGradientStart,
+                        PrimaryGradientEnd
                     )
                 )
             )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top Bar - Düzeltilmiş
+            // Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -94,14 +94,14 @@ fun CompanyProfile(onBack: () -> Unit) {
                 ) {
                     Icon(
                         Icons.Default.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = "Geri",
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
                 }
 
                 Text(
-                    "Company Profile",
+                    "Şirket Profili",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -124,7 +124,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = Color(0xFF2196F3))
+                        CircularProgressIndicator(color = PrimaryGradientStart)
                     }
                 } else {
                     LazyColumn(
@@ -143,7 +143,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                                         .size(80.dp)
                                         .background(
                                             brush = Brush.linearGradient(
-                                                colors = listOf(Color(0xFF2196F3), Color(0xFF1976D2))
+                                                colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                                             ),
                                             shape = CircleShape
                                         ),
@@ -158,21 +158,21 @@ fun CompanyProfile(onBack: () -> Unit) {
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = name.ifBlank { "Company" },
+                                    text = name.ifBlank { "Şirket" },
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF333333)
+                                    color = DarkText
                                 )
                                 Text(
                                     text = email,
                                     fontSize = 13.sp,
-                                    color = Color(0xFF666666)
+                                    color = LightText
                                 )
                             }
                         }
 
                         item {
-                            Divider(color = Color(0xFFE0E0E0))
+                            Divider(color = DividerColor)
                         }
 
                         item {
@@ -182,10 +182,10 @@ fun CompanyProfile(onBack: () -> Unit) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    "Company Information",
+                                    "Şirket Bilgileri",
                                     fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF333333)
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkText
                                 )
                                 TextButton(
                                     onClick = { isEditing = !isEditing },
@@ -193,8 +193,10 @@ fun CompanyProfile(onBack: () -> Unit) {
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
-                                        if (isEditing) "Cancel" else "Edit",
-                                        fontSize = 13.sp
+                                        if (isEditing) "İptal" else "Düzenle",
+                                        fontSize = 13.sp,
+                                        color = PrimaryGradientStart,
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }
@@ -202,7 +204,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Company Name",
+                                label = "Şirket Adı",
                                 value = name,
                                 onValueChange = { name = it },
                                 enabled = isEditing,
@@ -212,7 +214,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Phone",
+                                label = "Telefon",
                                 value = phone,
                                 onValueChange = { phone = it },
                                 enabled = isEditing,
@@ -222,7 +224,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Address",
+                                label = "Adres",
                                 value = address,
                                 onValueChange = { address = it },
                                 enabled = isEditing,
@@ -232,7 +234,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Website",
+                                label = "Web Sitesi",
                                 value = website,
                                 onValueChange = { website = it },
                                 enabled = isEditing,
@@ -242,7 +244,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Industry",
+                                label = "Sektör",
                                 value = industry,
                                 onValueChange = { industry = it },
                                 enabled = isEditing,
@@ -270,11 +272,11 @@ fun CompanyProfile(onBack: () -> Unit) {
                                                     onSuccess = {
                                                         isSaving = false
                                                         isEditing = false
-                                                        Toast.makeText(context, "Profile updated! ✅", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Profil güncellendi! ✅", Toast.LENGTH_SHORT).show()
                                                     },
                                                     onFailure = {
                                                         isSaving = false
-                                                        Toast.makeText(context, "Failed to update", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Güncelleme başarısız", Toast.LENGTH_SHORT).show()
                                                     }
                                                 )
                                             }
@@ -284,7 +286,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                                         .fillMaxWidth()
                                         .height(48.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF2196F3)
+                                        containerColor = PrimaryGradientStart
                                     ),
                                     shape = RoundedCornerShape(10.dp),
                                     enabled = !isSaving
@@ -295,7 +297,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                                             modifier = Modifier.size(20.dp)
                                         )
                                     } else {
-                                        Text("Save Changes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Text("Değişiklikleri Kaydet", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                     }
                                 }
                             }
@@ -323,7 +325,7 @@ fun CompanyProfileField(
         Text(
             text = label,
             fontSize = 12.sp,
-            color = Color(0xFF666666),
+            color = LightText,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 6.dp)
         )
@@ -337,17 +339,25 @@ fun CompanyProfileField(
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = Color(0xFF2196F3),
+                    tint = if (enabled) PrimaryGradientStart else LightText,
                     modifier = Modifier.size(18.dp)
                 )
             },
             shape = RoundedCornerShape(10.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                disabledBorderColor = Color(0xFFE0E0E0),
-                disabledTextColor = Color(0xFF333333),
-                disabledLeadingIconColor = Color(0xFF999999),
-                focusedBorderColor = Color(0xFF2196F3),
-                unfocusedBorderColor = Color(0xFFE0E0E0)
+                disabledBorderColor = DividerColor,
+                disabledTextColor = DarkText,
+                disabledLeadingIconColor = LightText,
+                disabledContainerColor = TextFieldBackground.copy(alpha = 0.5f),
+                focusedBorderColor = PrimaryGradientStart,
+                unfocusedBorderColor = DividerColor,
+                focusedTextColor = DarkText,
+                unfocusedTextColor = DarkText,
+                focusedContainerColor = TextFieldBackgroundFocused,
+                unfocusedContainerColor = TextFieldBackground,
+                focusedLeadingIconColor = PrimaryGradientStart,
+                unfocusedLeadingIconColor = LightText,
+                cursorColor = PrimaryGradientStart
             ),
             singleLine = true,
             textStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 14.sp)

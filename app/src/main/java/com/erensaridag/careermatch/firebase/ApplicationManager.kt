@@ -61,7 +61,6 @@ class ApplicationManager {
         return try {
             val snapshot = firestore.collection("applications")
                 .whereEqualTo("studentId", studentId)
-                .orderBy("appliedAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
 

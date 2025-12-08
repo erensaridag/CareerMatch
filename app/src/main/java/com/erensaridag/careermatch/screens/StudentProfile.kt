@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.erensaridag.careermatch.firebase.AuthManager
+import com.erensaridag.careermatch.ui.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -53,7 +54,7 @@ fun StudentProfile(onBack: () -> Unit) {
                         graduationYear = user["graduationYear"] as? String ?: ""
                     },
                     onFailure = {
-                        Toast.makeText(context, "Load failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
                     }
                 )
                 isLoading = false
@@ -67,7 +68,7 @@ fun StudentProfile(onBack: () -> Unit) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF4CAF50), Color(0xFF2196F3))
+                    listOf(PrimaryGradientStart, PrimaryGradientEnd)
                 )
             )
     ) {
@@ -78,20 +79,21 @@ fun StudentProfile(onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = Color.White)
                 }
-                Text("My Profile", fontSize = 22.sp, color = Color.White)
+                Text("Profilim", fontSize = 22.sp, color = Color.White, fontWeight = FontWeight.Bold)
             }
 
             // Ana kart
             Card(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 if (isLoading) {
                     // Yükleniyor göstergesi
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = PrimaryGradientStart)
                     }
                 } else {
                     // Profil içeriği
@@ -102,57 +104,96 @@ fun StudentProfile(onBack: () -> Unit) {
                                 Box(
                                     modifier = Modifier
                                         .size(100.dp)
-                                        .background(Color(0xFF4CAF50), CircleShape),
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                            ),
+                                            CircleShape
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         name.firstOrNull()?.uppercase() ?: "S",
                                         fontSize = 40.sp,
-                                        color = Color.White
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
-                                Spacer(Modifier.height(8.dp))
-                                Text(name.ifBlank { "Student" }, fontWeight = FontWeight.Bold)
-                                Text(email, fontSize = 13.sp, color = Color.Gray)
+                                Spacer(Modifier.height(12.dp))
+                                Text(
+                                    name.ifBlank { "Öğrenci" },
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp,
+                                    color = DarkText
+                                )
+                                Text(email, fontSize = 14.sp, color = LightText)
                             }
                         }
 
-                        item { Divider() }
+                        item { 
+                            Spacer(Modifier.height(24.dp))
+                            Divider(color = DividerColor) 
+                            Spacer(Modifier.height(16.dp))
+                        }
 
                         // Bilgi alanları
                         item {
                             Row(
                                 Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Personal Info", fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Kişisel Bilgiler",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = DarkText
+                                )
                                 TextButton(onClick = { isEditing = !isEditing }) {
-                                    Text(if (isEditing) "Cancel" else "Edit")
+                                    Text(
+                                        if (isEditing) "İptal" else "Düzenle",
+                                        color = PrimaryGradientStart,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
                                 }
                             }
+                            Spacer(Modifier.height(12.dp))
                         }
 
                         item {
-                            ProfileField("Full Name", name, { name = it }, isEditing, Icons.Default.Person)
+                            ProfileField("Ad Soyad", name, { name = it }, isEditing, Icons.Default.Person)
                         }
                         item {
-                            ProfileField("Phone", phone, { phone = it }, isEditing, Icons.Default.Phone)
+                            ProfileField("Telefon", phone, { phone = it }, isEditing, Icons.Default.Phone)
                         }
-                        item { Divider() }
-                        item { Text("Education", fontWeight = FontWeight.SemiBold) }
-                        item {
-                            ProfileField("University", university, { university = it }, isEditing, Icons.Default.School)
+                        item { 
+                            Spacer(Modifier.height(16.dp))
+                            Divider(color = DividerColor)
+                            Spacer(Modifier.height(16.dp))
+                        }
+                        item { 
+                            Text(
+                                "Eğitim",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = DarkText
+                            )
+                            Spacer(Modifier.height(12.dp))
                         }
                         item {
-                            ProfileField("Major", major, { major = it }, isEditing, Icons.Default.MenuBook)
+                            ProfileField("Üniversite", university, { university = it }, isEditing, Icons.Default.School)
                         }
                         item {
-                            ProfileField("Graduation Year", graduationYear, { graduationYear = it }, isEditing, Icons.Default.CalendarToday)
+                            ProfileField("Bölüm", major, { major = it }, isEditing, Icons.Default.MenuBook)
+                        }
+                        item {
+                            ProfileField("Mezuniyet Yılı", graduationYear, { graduationYear = it }, isEditing, Icons.Default.CalendarToday)
                         }
 
                         // Kaydet butonu
                         if (isEditing) {
                             item {
+                                Spacer(Modifier.height(24.dp))
                                 Button(
                                     onClick = {
                                         isSaving = true
@@ -170,20 +211,27 @@ fun StudentProfile(onBack: () -> Unit) {
                                                 result.fold(
                                                     onSuccess = {
                                                         isEditing = false
-                                                        Toast.makeText(context, "Updated ✅", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Güncellendi ✅", Toast.LENGTH_SHORT).show()
                                                     },
                                                     onFailure = {
-                                                        Toast.makeText(context, "Failed", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Başarısız", Toast.LENGTH_SHORT).show()
                                                     }
                                                 )
                                                 isSaving = false
                                             }
                                         }
                                     },
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = PrimaryGradientStart
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    if (isSaving) CircularProgressIndicator(color = Color.White)
-                                    else Text("Save Changes")
+                                    if (isSaving) CircularProgressIndicator(
+                                        color = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    else Text("Değişiklikleri Kaydet", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -204,15 +252,37 @@ fun ProfileField(
     icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
     Column {
-        Text(label, fontSize = 12.sp, color = Color.Gray)
+        Text(label, fontSize = 12.sp, color = LightText, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(4.dp))
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             enabled = enabled,
-            leadingIcon = { Icon(icon, contentDescription = null, tint = Color(0xFF4CAF50)) },
+            leadingIcon = { 
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = if (enabled) PrimaryGradientStart else LightText
+                )
+            },
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PrimaryGradientStart,
+                unfocusedBorderColor = DividerColor,
+                disabledBorderColor = DividerColor,
+                focusedTextColor = DarkText,
+                unfocusedTextColor = DarkText,
+                disabledTextColor = LightText,
+                disabledContainerColor = TextFieldBackground.copy(alpha = 0.5f),
+                focusedContainerColor = TextFieldBackgroundFocused,
+                unfocusedContainerColor = TextFieldBackground,
+                focusedLeadingIconColor = PrimaryGradientStart,
+                unfocusedLeadingIconColor = LightText,
+                cursorColor = PrimaryGradientStart
+            )
         )
+        Spacer(Modifier.height(12.dp))
     }
 }

@@ -1,130 +1,140 @@
-    package com.erensaridag.careermatch.firebase
+package com.erensaridag.careermatch.firebase
 
-    import com.google.firebase.auth.FirebaseAuth
-    import com.google.firebase.auth.FirebaseUser
-    import com.google.firebase.firestore.FirebaseFirestore
-    import kotlinx.coroutines.tasks.await
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
-    class AuthManager {
-        private val auth = FirebaseAuth.getInstance()
-        private val firestore = FirebaseFirestore.getInstance()
+class AuthManager {
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
 
-        // Mevcut kullanıcıyı al
-        fun getCurrentUser(): FirebaseUser? = auth.currentUser
+    // Register - Şifre Firestore'da da sakla
+    suspend fun signUp(
+        email: String,
+        password: String,
+        name: String,
+        userType: String
+    ): Result<String> {
+        return try {
+            android.util.Log.d("AuthManager", "Registering user: $email as $userType")
 
-        // Kullanıcı giriş yapmış mı ve session aktif mi?
-        fun isUserLoggedIn(): Boolean = auth.currentUser != null
+            // Firebase Auth'da user oluştur
+            val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+            val userId = authResult.user?.uid ?: return Result.failure(Exception("User ID not found"))
 
-        // Otomatik giriş için kullanıcı tipini al
-        suspend fun getCurrentUserType(): String? {
-            val userId = auth.currentUser?.uid ?: return null
-            return try {
-                val userDoc = firestore.collection("users")
-                    .document(userId)
-                    .get()
-                    .await()
-                userDoc.getString("userType")
-            } catch (e: Exception) {
-                null
-            }
-        }
+            // Firestore'da user dökümanı oluştur (şifreyi de sakla)
+            val userData = hashMapOf(
+                "uid" to userId,
+                "email" to email,
+                "password" to password,  //  ŞİFRE BURAYA KAYDEDILIYOR
+                "name" to name,
+                "userType" to userType,
+                "createdAt" to System.currentTimeMillis()
+            )
 
-        // Email ve şifre ile kayıt ol
-        suspend fun signUp(
-            email: String,
-            password: String,
-            name: String,
-            userType: String
-        ): Result<String> {
-            return try {
-                // Firebase Authentication ile kullanıcı oluştur
-                val result = auth.createUserWithEmailAndPassword(email, password).await()
-                val userId = result.user?.uid ?: return Result.failure(Exception("User ID not found"))
+            firestore.collection("users")
+                .document(userId)
+                .set(userData)
+                .await()
 
-                // Firestore'a kullanıcı bilgilerini kaydet
-                val userData = hashMapOf(
-                    "uid" to userId,
-                    "email" to email,
-                    "name" to name,
-                    "userType" to userType,
-                    "createdAt" to System.currentTimeMillis()
-                )
-
-                firestore.collection("users")
-                    .document(userId)
-                    .set(userData)
-                    .await()
-
-                Result.success(userId)
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-        // Email ve şifre ile giriş yap
-        suspend fun signIn(email: String, password: String): Result<Pair<String, String>> {
-            return try {
-                // Firebase Authentication ile giriş yap
-                val result = auth.signInWithEmailAndPassword(email, password).await()
-                val userId = result.user?.uid ?: return Result.failure(Exception("User ID not found"))
-
-                // Firestore'dan kullanıcı tipini al
-                val userDoc = firestore.collection("users")
-                    .document(userId)
-                    .get()
-                    .await()
-
-                val userType = userDoc.getString("userType") ?: "Student"
-
-                Result.success(Pair(userId, userType))
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-        // Çıkış yap
-        fun signOut() {
-            auth.signOut()
-        }
-
-        // Şifre sıfırlama emaili gönder
-        suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
-            return try {
-                auth.sendPasswordResetEmail(email).await()
-                Result.success(Unit)
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-        // Kullanıcı bilgilerini al
-        suspend fun getUserData(userId: String): Result<Map<String, Any>> {
-            return try {
-                val document = firestore.collection("users")
-                    .document(userId)
-                    .get()
-                    .await()
-
-                if (document.exists()) {
-                    Result.success(document.data ?: emptyMap())
-                } else {
-                    Result.failure(Exception("User not found"))
-                }
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-
-        // Kullanıcı bilgilerini güncelle
-        suspend fun updateUserData(userId: String, data: Map<String, Any>): Result<Unit> {
-            return try {
-                firestore.collection("users")
-                    .document(userId)
-                    .update(data)
-                    .await()
-                Result.success(Unit)
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
+            android.util.Log.d("AuthManager", "User registered successfully: $userId")
+            Result.success(userId)
+        } catch (e: Exception) {
+            android.util.Log.e("AuthManager", "Registration failed", e)
+            Result.failure(e)
         }
     }
+
+    // Login
+    suspend fun signIn(email: String, password: String): Result<String> {
+        return try {
+            android.util.Log.d("AuthManager", "Signing in user: $email")
+
+            auth.signInWithEmailAndPassword(email, password).await()
+            val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User ID not found"))
+
+            android.util.Log.d("AuthManager", "User signed in successfully: $userId")
+            Result.success(userId)
+        } catch (e: Exception) {
+            android.util.Log.e("AuthManager", "Sign in failed", e)
+            Result.failure(e)
+        }
+    }
+
+    // Logout
+    fun signOut() {
+        auth.signOut()
+        android.util.Log.d("AuthManager", "User signed out")
+    }
+
+    // Şifre sıfırlama
+    suspend fun resetPassword(email: String): Result<Unit> {
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Giriş yapan user'ın türünü al
+    suspend fun getCurrentUserType(): String? {
+        return try {
+            val userId = auth.currentUser?.uid ?: return null
+            val doc = firestore.collection("users").document(userId).get().await()
+            doc.getString("userType")
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // User'ın giriş yapıp yapmadığını kontrol et
+    fun isUserLoggedIn(): Boolean {
+        return auth.currentUser != null
+    }
+
+    // Tüm users'ları getir (Debug için)
+    suspend fun getAllUsers(): Result<List<Map<String, Any>>> {
+        return try {
+            val snapshot = firestore.collection("users").get().await()
+            val users = snapshot.documents.mapNotNull { doc ->
+                doc.data?.apply {
+                    put("id", doc.id)
+                }
+            }
+            Result.success(users)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Mevcut kullanıcıyı al
+    fun getCurrentUser() = auth.currentUser
+
+    // Kullanıcı verilerini getir
+    suspend fun getUserData(userId: String): Result<Map<String, Any>> {
+        return try {
+            val doc = firestore.collection("users").document(userId).get().await()
+            if (doc.exists()) {
+                Result.success(doc.data ?: emptyMap())
+            } else {
+                Result.failure(Exception("User not found"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Kullanıcı verilerini güncelle
+    suspend fun updateUserData(userId: String, updates: Map<String, Any>): Result<Unit> {
+        return try {
+            firestore.collection("users")
+                .document(userId)
+                .update(updates)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}

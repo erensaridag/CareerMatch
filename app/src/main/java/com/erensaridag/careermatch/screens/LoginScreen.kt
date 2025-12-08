@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.erensaridag.careermatch.firebase.AuthManager
+import com.erensaridag.careermatch.ui.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -65,9 +66,9 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF1a237e).copy(alpha = 0.9f + animatedOffset * 0.1f),
-                        Color(0xFF0d47a1),
-                        Color(0xFF01579b)
+                        PrimaryGradientStart.copy(alpha = 0.9f + animatedOffset * 0.1f),
+                        PrimaryGradientEnd,
+                        AccentColor
                     )
                 )
             ),
@@ -101,7 +102,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         color = Color.White
                     )
                     Text(
-                        text = "Your future starts here",
+                        text = "Geleceğin burada başlıyor",
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.8f)
                     )
@@ -146,15 +147,15 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             },
                             modifier = Modifier.weight(1f).height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isLogin) Color(0xFF1976D2) else Color.Transparent,
-                                contentColor = if (isLogin) Color.White else Color(0xFF666666)
+                                containerColor = if (isLogin) PrimaryGradientStart else Color.Transparent,
+                                contentColor = if (isLogin) Color.White else LightText
                             ),
                             shape = RoundedCornerShape(10.dp),
                             elevation = ButtonDefaults.buttonElevation(
                                 defaultElevation = if (isLogin) 2.dp else 0.dp
                             )
                         ) {
-                            Text("Login", fontWeight = FontWeight.Bold)
+                            Text("Giriş Yap", fontWeight = FontWeight.Bold)
                         }
 
                         Button(
@@ -164,15 +165,15 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             },
                             modifier = Modifier.weight(1f).height(44.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (!isLogin) Color(0xFF1976D2) else Color.Transparent,
-                                contentColor = if (!isLogin) Color.White else Color(0xFF666666)
+                                containerColor = if (!isLogin) PrimaryGradientStart else Color.Transparent,
+                                contentColor = if (!isLogin) Color.White else LightText
                             ),
                             shape = RoundedCornerShape(10.dp),
                             elevation = ButtonDefaults.buttonElevation(
                                 defaultElevation = if (!isLogin) 2.dp else 0.dp
                             )
                         ) {
-                            Text("Register", fontWeight = FontWeight.Bold)
+                            Text("Kayıt Ol", fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -180,7 +181,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
                     // User Type Selector
                     Text(
-                        text = "I am a",
+                        text = "Ben bir",
                         fontSize = 14.sp,
                         color = Color(0xFF666666),
                         modifier = Modifier.fillMaxWidth()
@@ -200,9 +201,9 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (selectedTab == 0)
-                                    Color(0xFF4CAF50)
+                                    PrimaryGradientStart
                                 else
-                                    Color(0xFFF5F5F5)
+                                    CardBackground
                             ),
                             elevation = CardDefaults.cardElevation(
                                 defaultElevation = if (selectedTab == 0) 4.dp else 0.dp
@@ -221,10 +222,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    "Student",
+                                    "Öğrenci",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (selectedTab == 0) Color.White else Color(0xFF666666)
+                                    color = if (selectedTab == 0) Color.White else LightText
                                 )
                             }
                         }
@@ -237,9 +238,9 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (selectedTab == 1)
-                                    Color(0xFF2196F3)
+                                    PrimaryGradientEnd
                                 else
-                                    Color(0xFFF5F5F5)
+                                    CardBackground
                             ),
                             elevation = CardDefaults.cardElevation(
                                 defaultElevation = if (selectedTab == 1) 4.dp else 0.dp
@@ -258,10 +259,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    "Company",
+                                    "Şirket",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (selectedTab == 1) Color.White else Color(0xFF666666)
+                                    color = if (selectedTab == 1) Color.White else LightText
                                 )
                             }
                         }
@@ -276,16 +277,24 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 value = name,
                                 onValueChange = { name = it },
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Full Name") },
-                                placeholder = { Text("Enter your full name") },
+                                label = { Text("Ad Soyad") },
+                                placeholder = { Text("Adınızı ve soyadınızı girin") },
                                 leadingIcon = {
-                                    Icon(Icons.Default.Person, contentDescription = "Name")
+                                    Icon(Icons.Default.Person, contentDescription = "İsim")
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF1976D2),
-                                    focusedLabelColor = Color(0xFF1976D2),
-                                    cursorColor = Color(0xFF1976D2)
+                                    focusedBorderColor = PrimaryGradientStart,
+                                    unfocusedBorderColor = DividerColor,
+                                    focusedLabelColor = PrimaryGradientStart,
+                                    unfocusedLabelColor = LightText,
+                                    cursorColor = PrimaryGradientStart,
+                                    focusedContainerColor = TextFieldBackgroundFocused,
+                                    unfocusedContainerColor = TextFieldBackground,
+                                    focusedTextColor = DarkText,
+                                    unfocusedTextColor = DarkText,
+                                    focusedLeadingIconColor = PrimaryGradientStart,
+                                    unfocusedLeadingIconColor = LightText
                                 ),
                                 singleLine = true
                             )
@@ -298,17 +307,25 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         value = email,
                         onValueChange = { email = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Email Address") },
-                        placeholder = { Text("you@example.com") },
+                        label = { Text("E-posta Adresi") },
+                        placeholder = { Text("ornek@email.com") },
                         leadingIcon = {
-                            Icon(Icons.Default.Email, contentDescription = "Email")
+                            Icon(Icons.Default.Email, contentDescription = "E-posta")
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF1976D2),
-                            focusedLabelColor = Color(0xFF1976D2),
-                            cursorColor = Color(0xFF1976D2)
+                            focusedBorderColor = PrimaryGradientStart,
+                            unfocusedBorderColor = DividerColor,
+                            focusedLabelColor = PrimaryGradientStart,
+                            unfocusedLabelColor = LightText,
+                            cursorColor = PrimaryGradientStart,
+                            focusedContainerColor = TextFieldBackgroundFocused,
+                            unfocusedContainerColor = TextFieldBackground,
+                            focusedTextColor = DarkText,
+                            unfocusedTextColor = DarkText,
+                            focusedLeadingIconColor = PrimaryGradientStart,
+                            unfocusedLeadingIconColor = LightText
                         ),
                         singleLine = true,
                         enabled = !isLoading
@@ -321,10 +338,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         value = password,
                         onValueChange = { password = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Password") },
-                        placeholder = { Text("Enter your password") },
+                        label = { Text("Şifre") },
+                        placeholder = { Text("Şifrenizi girin") },
                         leadingIcon = {
-                            Icon(Icons.Default.Lock, contentDescription = "Password")
+                            Icon(Icons.Default.Lock, contentDescription = "Şifre")
                         },
                         trailingIcon = {
                             IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
@@ -341,9 +358,19 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF1976D2),
-                            focusedLabelColor = Color(0xFF1976D2),
-                            cursorColor = Color(0xFF1976D2)
+                            focusedBorderColor = PrimaryGradientStart,
+                            unfocusedBorderColor = DividerColor,
+                            focusedLabelColor = PrimaryGradientStart,
+                            unfocusedLabelColor = LightText,
+                            cursorColor = PrimaryGradientStart,
+                            focusedContainerColor = TextFieldBackgroundFocused,
+                            unfocusedContainerColor = TextFieldBackground,
+                            focusedTextColor = DarkText,
+                            unfocusedTextColor = DarkText,
+                            focusedLeadingIconColor = PrimaryGradientStart,
+                            unfocusedLeadingIconColor = LightText,
+                            focusedTrailingIconColor = PrimaryGradientStart,
+                            unfocusedTrailingIconColor = LightText
                         ),
                         singleLine = true,
                         enabled = !isLoading
@@ -366,20 +393,20 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                     checked = rememberMe,
                                     onCheckedChange = { rememberMe = it },
                                     colors = CheckboxDefaults.colors(
-                                        checkedColor = Color(0xFF1976D2)
+                                    checkedColor = PrimaryGradientStart
                                     )
                                 )
                                 Text(
-                                    "Remember me",
+                                    "Beni hatırla",
                                     fontSize = 10.sp,
                                     color = Color(0xFF666666)
                                 )
                             }
 
                             Text(
-                                text = "Forgot Password?",
+                                text = "Şifremi Unuttum?",
                                 fontSize = 10.sp,
-                                color = Color(0xFF1976D2),
+                                color = PrimaryGradientStart,
                                 fontWeight = FontWeight.Medium,
                                 textDecoration = TextDecoration.Underline,
                                 modifier = Modifier.clickable {
@@ -395,12 +422,12 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                     Button(
                         onClick = {
                             if (email.isBlank() || password.isBlank()) {
-                                Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
                             if (!isLogin && name.isBlank()) {
-                                Toast.makeText(context, "Please enter your name", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Lütfen adınızı girin", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
@@ -413,14 +440,22 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                         // Login
                                         val result = authManager.signIn(email, password)
                                         result.fold(
-                                            onSuccess = { (userId, savedUserType) ->
-                                                isLoading = false
-                                                Toast.makeText(context, "Welcome back!", Toast.LENGTH_SHORT).show()
-                                                onLoginSuccess(savedUserType)
+                                            onSuccess = { userId ->
+                                                // Get user type from Firestore
+                                                scope.launch {
+                                                    val userType = authManager.getCurrentUserType()
+                                                    isLoading = false
+                                                    if (userType != null) {
+                                                        Toast.makeText(context, "Tekrar hoşgeldiniz!", Toast.LENGTH_SHORT).show()
+                                                        onLoginSuccess(userType)
+                                                    } else {
+                                                        Toast.makeText(context, "Kullanıcı tipi alınamadı", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
                                             },
                                             onFailure = { error ->
                                                 isLoading = false
-                                                Toast.makeText(context, "Login failed: ${error.message}", Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, "Giriş başarısız: ${error.message}", Toast.LENGTH_LONG).show()
                                             }
                                         )
                                     } else {
@@ -429,18 +464,18 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                         result.fold(
                                             onSuccess = { userId ->
                                                 isLoading = false
-                                                Toast.makeText(context, "Account created successfully!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Hesap başarıyla oluşturuldu!", Toast.LENGTH_SHORT).show()
                                                 onLoginSuccess(userType)
                                             },
                                             onFailure = { error ->
                                                 isLoading = false
-                                                Toast.makeText(context, "Registration failed: ${error.message}", Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, "Kayıt başarısız: ${error.message}", Toast.LENGTH_LONG).show()
                                             }
                                         )
                                     }
                                 } catch (e: Exception) {
                                     isLoading = false
-                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
                         },
@@ -448,8 +483,8 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             .fillMaxWidth()
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1976D2),
-                            disabledContainerColor = Color(0xFFE0E0E0)
+                            containerColor = PrimaryGradientStart,
+                            disabledContainerColor = DividerColor
                         ),
                         shape = RoundedCornerShape(12.dp),
                         enabled = !isLoading && email.isNotBlank() && password.isNotBlank() && (isLogin || name.isNotBlank())
@@ -461,7 +496,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             )
                         } else {
                             Text(
-                                text = if (isLogin) "Sign In" else "Create Account",
+                                text = if (isLogin) "Giriş Yap" else "Hesap Oluştur",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -474,7 +509,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
             // mbKhein
             Text(
-                text = "made by khein",
+                text = "khein tarafından yapıldı",
                 fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -489,18 +524,32 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
             AlertDialog(
                 onDismissRequest = { showForgotPassword = false },
-                title = { Text("Reset Password") },
+                title = { Text("Şifre Sıfırla") },
                 text = {
                     Column {
-                        Text("Enter your email address and we'll send you a link to reset your password.")
+                        Text("E-posta adresinizi girin, şifrenizi sıfırlamanız için bir bağlantı gönderelim.")
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(
                             value = resetEmail,
                             onValueChange = { resetEmail = it },
-                            label = { Text("Email") },
+                            label = { Text("E-posta") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            enabled = !isResetting
+                            enabled = !isResetting,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryGradientStart,
+                                unfocusedBorderColor = DividerColor,
+                                disabledBorderColor = DividerColor,
+                                focusedLabelColor = PrimaryGradientStart,
+                                unfocusedLabelColor = LightText,
+                                cursorColor = PrimaryGradientStart,
+                                focusedContainerColor = TextFieldBackgroundFocused,
+                                unfocusedContainerColor = TextFieldBackground,
+                                disabledContainerColor = TextFieldBackground.copy(alpha = 0.5f),
+                                focusedTextColor = DarkText,
+                                unfocusedTextColor = DarkText,
+                                disabledTextColor = LightText
+                            )
                         )
                     }
                 },
@@ -508,28 +557,28 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                     Button(
                         onClick = {
                             if (resetEmail.isBlank()) {
-                                Toast.makeText(context, "Please enter your email", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Lütfen e-posta adresinizi girin", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
                             isResetting = true
-                            scope.launch {
-                                val result = authManager.sendPasswordResetEmail(resetEmail)
-                                result.fold(
-                                    onSuccess = {
-                                        isResetting = false
-                                        Toast.makeText(context, "Password reset email sent!", Toast.LENGTH_LONG).show()
-                                        showForgotPassword = false
-                                    },
+                                scope.launch {
+                                    val result = authManager.resetPassword(resetEmail)
+                                    result.fold(
+                                        onSuccess = {
+                                            isResetting = false
+                                            Toast.makeText(context, "Şifre sıfırlama e-postası gönderildi!", Toast.LENGTH_LONG).show()
+                                            showForgotPassword = false
+                                        },
                                     onFailure = { error ->
                                         isResetting = false
-                                        Toast.makeText(context, "Error: ${error.message}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Hata: ${error.message}", Toast.LENGTH_LONG).show()
                                     }
                                 )
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1976D2)
+                            containerColor = PrimaryGradientStart
                         ),
                         enabled = !isResetting
                     ) {
@@ -539,7 +588,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 modifier = Modifier.size(20.dp)
                             )
                         } else {
-                            Text("Send Reset Link")
+                            Text("Sıfırlama Bağlantısı Gönder")
                         }
                     }
                 },
@@ -548,7 +597,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         onClick = { showForgotPassword = false },
                         enabled = !isResetting
                     ) {
-                        Text("Cancel")
+                        Text("İptal")
                     }
                 }
             )

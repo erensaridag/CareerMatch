@@ -1,7 +1,7 @@
 package com.erensaridag.careermatch.data
 
 data class Internship(
-    val id: Int,
+    val id: String,
     val title: String,
     val company: String,
     val location: String,
@@ -13,58 +13,58 @@ data class Internship(
 fun getSampleInternships(): List<Internship> {
     return listOf(
         Internship(
-            id = 1,
-            title = "Android Developer",
+            id = "1",
+            title = "Android Geliştirici",
             company = "TechCorp",
             location = "Istanbul",
-            duration = "3 months",
+            duration = "3 ay",
             salary = "$800",
-            description = "Mobile app development with Kotlin and Jetpack Compose"
+            description = "Kotlin ve Jetpack Compose ile mobil uygulama geliştirme"
         ),
         Internship(
-            id = 2,
-            title = "UI/UX Designer",
+            id = "2",
+            title = "UI/UX Tasarımcısı",
             company = "DesignCo",
-            location = "Remote",
-            duration = "6 months",
+            location = "Uzaktan",
+            duration = "6 ay",
             salary = "$600",
-            description = "Create beautiful and intuitive user interfaces"
+            description = "Güzel ve sezgisel kullanıcı arayüzleri oluşturun"
         ),
         Internship(
-            id = 3,
-            title = "Data Analyst",
+            id = "3",
+            title = "Veri Analisti",
             company = "DataTech",
             location = "Ankara",
-            duration = "4 months",
+            duration = "4 ay",
             salary = "$700",
-            description = "Analyze big data and create insights for business decisions"
+            description = "Büyük veriyi analiz edin ve iş kararları için içgörüler oluşturun"
         ),
         Internship(
-            id = 4,
-            title = "Web Developer",
+            id = "4",
+            title = "Web Geliştirici",
             company = "WebStudio",
             location = "Izmir",
-            duration = "5 months",
+            duration = "5 ay",
             salary = "$750",
-            description = "Full-stack web development using modern frameworks"
+            description = "Modern frameworkler kullanarak full-stack web geliştirme"
         ),
         Internship(
-            id = 5,
-            title = "iOS Developer",
+            id = "5",
+            title = "iOS Geliştirici",
             company = "AppleTech",
             location = "Istanbul",
-            duration = "3 months",
+            duration = "3 ay",
             salary = "$850",
-            description = "Develop native iOS applications with Swift and SwiftUI"
+            description = "Swift ve SwiftUI ile native iOS uygulamaları geliştirin"
         ),
         Internship(
-            id = 6,
-            title = "Backend Developer",
+            id = "6",
+            title = "Backend Geliştirici",
             company = "CloudSys",
-            location = "Remote",
-            duration = "6 months",
+            location = "Uzaktan",
+            duration = "6 ay",
             salary = "$900",
-            description = "Build scalable backend systems and APIs"
+            description = "Ölçeklenebilir backend sistemleri ve API'ler oluşturun"
         )
     )
 }

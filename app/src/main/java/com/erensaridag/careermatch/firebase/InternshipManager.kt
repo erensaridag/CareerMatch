@@ -52,14 +52,13 @@ class InternshipManager {
         return try {
             val snapshot = firestore.collection("internships")
                 .whereEqualTo("isActive", true)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
             val internships = snapshot.documents.mapNotNull { doc ->
                 try {
                     Internship(
-                        id = doc.id.hashCode(),
+                        id = doc.id,
                         title = doc.getString("title") ?: "",
                         company = doc.getString("company") ?: "",
                         location = doc.getString("location") ?: "",
@@ -83,14 +82,13 @@ class InternshipManager {
         return try {
             val snapshot = firestore.collection("internships")
                 .whereEqualTo("companyId", companyId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
             val internships = snapshot.documents.mapNotNull { doc ->
                 try {
                     Internship(
-                        id = doc.id.hashCode(),
+                        id = doc.id,
                         title = doc.getString("title") ?: "",
                         company = doc.getString("company") ?: "",
                         location = doc.getString("location") ?: "",
@@ -158,7 +156,7 @@ class InternshipManager {
                         location.contains(query, ignoreCase = true)
                     ) {
                         Internship(
-                            id = doc.id.hashCode(),
+                            id = doc.id,
                             title = title,
                             company = company,
                             location = location,
