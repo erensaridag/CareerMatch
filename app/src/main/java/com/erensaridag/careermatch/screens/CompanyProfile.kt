@@ -55,7 +55,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                     },
                     onFailure = {
                         isLoading = false
-                        Toast.makeText(context, "Profil yüklenemedi", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Profile could not be loaded", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -94,20 +94,20 @@ fun CompanyProfile(onBack: () -> Unit) {
                 ) {
                     Icon(
                         Icons.Default.ArrowBack,
-                        contentDescription = "Geri",
+                        contentDescription = "Back",
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
                 }
 
                 Text(
-                    "Şirket Profili",
+                    "Company Profile",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
 
-                // Placeholder için boş space
+                // Placeholder for empty space
                 Box(modifier = Modifier.size(36.dp))
             }
 
@@ -158,7 +158,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = name.ifBlank { "Şirket" },
+                                    text = name.ifBlank { "Company" },
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = DarkText
@@ -182,7 +182,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    "Şirket Bilgileri",
+                                    "Company Information",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = DarkText
@@ -193,7 +193,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
-                                        if (isEditing) "İptal" else "Düzenle",
+                                        if (isEditing) "Cancel" else "Edit",
                                         fontSize = 13.sp,
                                         color = PrimaryGradientStart,
                                         fontWeight = FontWeight.SemiBold
@@ -204,7 +204,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Şirket Adı",
+                                label = "Company Name",
                                 value = name,
                                 onValueChange = { name = it },
                                 enabled = isEditing,
@@ -214,7 +214,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Telefon",
+                                label = "Phone",
                                 value = phone,
                                 onValueChange = { phone = it },
                                 enabled = isEditing,
@@ -224,7 +224,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Adres",
+                                label = "Address",
                                 value = address,
                                 onValueChange = { address = it },
                                 enabled = isEditing,
@@ -234,7 +234,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Web Sitesi",
+                                label = "Website",
                                 value = website,
                                 onValueChange = { website = it },
                                 enabled = isEditing,
@@ -244,7 +244,7 @@ fun CompanyProfile(onBack: () -> Unit) {
 
                         item {
                             CompanyProfileField(
-                                label = "Sektör",
+                                label = "Industry",
                                 value = industry,
                                 onValueChange = { industry = it },
                                 enabled = isEditing,
@@ -272,11 +272,11 @@ fun CompanyProfile(onBack: () -> Unit) {
                                                     onSuccess = {
                                                         isSaving = false
                                                         isEditing = false
-                                                        Toast.makeText(context, "Profil güncellendi! ✅", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Profile updated! ✅", Toast.LENGTH_SHORT).show()
                                                     },
                                                     onFailure = {
                                                         isSaving = false
-                                                        Toast.makeText(context, "Güncelleme başarısız", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Update failed", Toast.LENGTH_SHORT).show()
                                                     }
                                                 )
                                             }
@@ -297,7 +297,7 @@ fun CompanyProfile(onBack: () -> Unit) {
                                             modifier = Modifier.size(20.dp)
                                         )
                                     } else {
-                                        Text("Değişiklikleri Kaydet", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Text("Save Changes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                     }
                                 }
                             }

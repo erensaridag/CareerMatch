@@ -78,6 +78,8 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .imePadding()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -102,7 +104,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         color = Color.White
                     )
                     Text(
-                        text = "Geleceğin burada başlıyor",
+                        text = "Your future starts here",
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.8f)
                     )
@@ -155,7 +157,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 defaultElevation = if (isLogin) 2.dp else 0.dp
                             )
                         ) {
-                            Text("Giriş Yap", fontWeight = FontWeight.Bold)
+                            Text("Login", fontWeight = FontWeight.Bold)
                         }
 
                         Button(
@@ -173,7 +175,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 defaultElevation = if (!isLogin) 2.dp else 0.dp
                             )
                         ) {
-                            Text("Kayıt Ol", fontWeight = FontWeight.Bold)
+                            Text("Sign Up", fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -181,7 +183,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
                     // User Type Selector
                     Text(
-                        text = "Ben bir",
+                        text = "I am a",
                         fontSize = 14.sp,
                         color = Color(0xFF666666),
                         modifier = Modifier.fillMaxWidth()
@@ -222,7 +224,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    "Öğrenci",
+                                    "Student",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (selectedTab == 0) Color.White else LightText
@@ -259,7 +261,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    "Şirket",
+                                    "Company",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (selectedTab == 1) Color.White else LightText
@@ -277,10 +279,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 value = name,
                                 onValueChange = { name = it },
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Ad Soyad") },
-                                placeholder = { Text("Adınızı ve soyadınızı girin") },
+                                label = { Text("Full Name") },
+                                placeholder = { Text("Enter your full name") },
                                 leadingIcon = {
-                                    Icon(Icons.Default.Person, contentDescription = "İsim")
+                                    Icon(Icons.Default.Person, contentDescription = "Name")
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
@@ -307,10 +309,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         value = email,
                         onValueChange = { email = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("E-posta Adresi") },
-                        placeholder = { Text("ornek@email.com") },
+                        label = { Text("Email Address") },
+                        placeholder = { Text("example@email.com") },
                         leadingIcon = {
-                            Icon(Icons.Default.Email, contentDescription = "E-posta")
+                            Icon(Icons.Default.Email, contentDescription = "Email")
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         shape = RoundedCornerShape(12.dp),
@@ -338,10 +340,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         value = password,
                         onValueChange = { password = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Şifre") },
-                        placeholder = { Text("Şifrenizi girin") },
+                        label = { Text("Password") },
+                        placeholder = { Text("Enter your password") },
                         leadingIcon = {
-                            Icon(Icons.Default.Lock, contentDescription = "Şifre")
+                            Icon(Icons.Default.Lock, contentDescription = "Password")
                         },
                         trailingIcon = {
                             IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
@@ -397,14 +399,14 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                     )
                                 )
                                 Text(
-                                    "Beni hatırla",
+                                    "Remember me",
                                     fontSize = 10.sp,
                                     color = Color(0xFF666666)
                                 )
                             }
 
                             Text(
-                                text = "Şifremi Unuttum?",
+                                text = "Forgot Password?",
                                 fontSize = 10.sp,
                                 color = PrimaryGradientStart,
                                 fontWeight = FontWeight.Medium,
@@ -422,12 +424,12 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                     Button(
                         onClick = {
                             if (email.isBlank() || password.isBlank()) {
-                                Toast.makeText(context, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
                             if (!isLogin && name.isBlank()) {
-                                Toast.makeText(context, "Lütfen adınızı girin", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Please enter your name", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
@@ -446,16 +448,16 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                                     val userType = authManager.getCurrentUserType()
                                                     isLoading = false
                                                     if (userType != null) {
-                                                        Toast.makeText(context, "Tekrar hoşgeldiniz!", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Welcome back!", Toast.LENGTH_SHORT).show()
                                                         onLoginSuccess(userType)
                                                     } else {
-                                                        Toast.makeText(context, "Kullanıcı tipi alınamadı", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Could not retrieve user type", Toast.LENGTH_SHORT).show()
                                                     }
                                                 }
                                             },
                                             onFailure = { error ->
                                                 isLoading = false
-                                                Toast.makeText(context, "Giriş başarısız: ${error.message}", Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, "Login failed: ${error.message}", Toast.LENGTH_LONG).show()
                                             }
                                         )
                                     } else {
@@ -464,18 +466,18 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                         result.fold(
                                             onSuccess = { userId ->
                                                 isLoading = false
-                                                Toast.makeText(context, "Hesap başarıyla oluşturuldu!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Account created successfully!", Toast.LENGTH_SHORT).show()
                                                 onLoginSuccess(userType)
                                             },
                                             onFailure = { error ->
                                                 isLoading = false
-                                                Toast.makeText(context, "Kayıt başarısız: ${error.message}", Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, "Registration failed: ${error.message}", Toast.LENGTH_LONG).show()
                                             }
                                         )
                                     }
                                 } catch (e: Exception) {
                                     isLoading = false
-                                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
                         },
@@ -496,7 +498,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             )
                         } else {
                             Text(
-                                text = if (isLogin) "Giriş Yap" else "Hesap Oluştur",
+                                text = if (isLogin) "Login" else "Create Account",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -509,7 +511,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
             // mbKhein
             Text(
-                text = "khein tarafından yapıldı",
+                text = "made by kian nyland",
                 fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -524,15 +526,22 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
             AlertDialog(
                 onDismissRequest = { showForgotPassword = false },
-                title = { Text("Şifre Sıfırla") },
+                title = { Text("Reset Password") },
                 text = {
                     Column {
-                        Text("E-posta adresinizi girin, şifrenizi sıfırlamanız için bir bağlantı gönderelim.")
+                        Text("Enter your email address and we'll send you a link to reset your password.")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Note: The email may land in your spam/junk folder, don't forget to check!",
+                            fontSize = 12.sp,
+                            color = Color(0xFFFF6B35),
+                            fontWeight = FontWeight.Medium
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(
                             value = resetEmail,
                             onValueChange = { resetEmail = it },
-                            label = { Text("E-posta") },
+                            label = { Text("Email") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             enabled = !isResetting,
@@ -557,7 +566,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                     Button(
                         onClick = {
                             if (resetEmail.isBlank()) {
-                                Toast.makeText(context, "Lütfen e-posta adresinizi girin", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Please enter your email address", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
@@ -567,12 +576,12 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                     result.fold(
                                         onSuccess = {
                                             isResetting = false
-                                            Toast.makeText(context, "Şifre sıfırlama e-postası gönderildi!", Toast.LENGTH_LONG).show()
+                                            Toast.makeText(context, "Password reset email sent! Check your spam folder.", Toast.LENGTH_LONG).show()
                                             showForgotPassword = false
                                         },
                                     onFailure = { error ->
                                         isResetting = false
-                                        Toast.makeText(context, "Hata: ${error.message}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Error: ${error.message}", Toast.LENGTH_LONG).show()
                                     }
                                 )
                             }
@@ -588,7 +597,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 modifier = Modifier.size(20.dp)
                             )
                         } else {
-                            Text("Sıfırlama Bağlantısı Gönder")
+                            Text("Send Reset Link")
                         }
                     }
                 },
@@ -597,7 +606,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         onClick = { showForgotPassword = false },
                         enabled = !isResetting
                     ) {
-                        Text("İptal")
+                        Text("Cancel")
                     }
                 }
             )

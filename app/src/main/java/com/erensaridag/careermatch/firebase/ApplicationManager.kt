@@ -80,7 +80,7 @@ class ApplicationManager {
                 }
             }
 
-            Result.success(applications)
+            Result.success(applications.sortedByDescending { it.appliedAt })
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -91,7 +91,6 @@ class ApplicationManager {
         return try {
             val snapshot = firestore.collection("applications")
                 .whereEqualTo("internshipId", internshipId)
-                .orderBy("appliedAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
@@ -160,6 +159,42 @@ class ApplicationManager {
         }
     }
 
+    // Bir staj ilanına yapılan başvuru sayısını al
+    suspend fun getInternshipApplicationCount(internshipId: String): Result<Int> {
+        return try {
+            val snapshot = firestore.collection("applications")
+                .whereEqualTo("internshipId", internshipId)
+                .get()
+                .await()
+
+            Result.success(snapshot.size())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Şirketin ilanları için toplam başvuru sayısını al
+    suspend fun getTotalApplicationsCountForInternships(internshipIds: List<String>): Result<Int> {
+        return try {
+            if (internshipIds.isEmpty()) {
+                return Result.success(0)
+            }
+
+            var total = 0
+            for (internshipId in internshipIds) {
+                val snapshot = firestore.collection("applications")
+                    .whereEqualTo("internshipId", internshipId)
+                    .get()
+                    .await()
+                total += snapshot.size()
+            }
+
+            Result.success(total)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // Bekleyen başvuru sayısını al (şirket için)
     suspend fun getPendingApplicationsCount(companyId: String): Result<Int> {
         return try {
@@ -216,7 +251,6 @@ class ApplicationManager {
         return try {
             val applicationsSnapshot = firestore.collection("applications")
                 .whereEqualTo("internshipId", internshipId)
-                .orderBy("appliedAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
@@ -225,31 +259,39 @@ class ApplicationManager {
                     val studentId = appDoc.getString("studentId") ?: return@mapNotNull null
 
                     // Öğrenci bilgilerini çek
-                    val userDoc = firestore.collection("users")
-                        .document(studentId)
-                        .get()
-                        .await()
-
-                    if (userDoc.exists()) {
-                        mapOf(
-                            "applicationId" to appDoc.id,
-                            "studentId" to studentId,
-                            "studentName" to (userDoc.getString("name") ?: "Unknown"),
-                            "studentEmail" to (userDoc.getString("email") ?: ""),
-                            "studentPhone" to (userDoc.getString("phone") ?: ""),
-                            "studentSkills" to (userDoc.getString("skills") ?: ""),
-                            "appliedAt" to (appDoc.getLong("appliedAt") ?: 0L),
-                            "status" to (appDoc.getString("status") ?: "pending")
-                        )
-                    } else {
+                    val userDoc = try {
+                        firestore.collection("users")
+                            .document(studentId)
+                            .get()
+                            .await()
+                    } catch (e: Exception) {
                         null
                     }
+
+                    val userData = userDoc?.data
+
+                    mapOf(
+                        "applicationId" to appDoc.id,
+                        "studentId" to studentId,
+                        "studentName" to (userData?.get("name") as? String ?: "Unknown Student"),
+                        "studentEmail" to (userData?.get("email") as? String ?: "No email"),
+                        "studentPhone" to (userData?.get("phone") as? String ?: ""),
+                        "studentUniversity" to (userData?.get("university") as? String ?: ""),
+                        "studentMajor" to (userData?.get("major") as? String ?: ""),
+                        "studentGraduationYear" to (userData?.get("graduationYear") as? String ?: ""),
+                        "studentCvUrl" to (userData?.get("cvUrl") as? String ?: ""),
+                        "studentSkills" to (userData?.get("skills") as? String ?: ""),
+                        "appliedAt" to (appDoc.getLong("appliedAt") ?: 0L),
+                        "status" to (appDoc.getString("status") ?: "pending")
+                    )
                 } catch (e: Exception) {
                     null
                 }
             }
 
-            Result.success(applicantsWithDetails)
+            Result.success(
+                applicantsWithDetails.sortedByDescending { (it["appliedAt"] as? Long) ?: 0L }
+            )
         } catch (e: Exception) {
             Result.failure(e)
         }

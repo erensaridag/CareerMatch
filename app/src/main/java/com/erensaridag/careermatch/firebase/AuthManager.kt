@@ -3,12 +3,21 @@ package com.erensaridag.careermatch.firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import java.security.MessageDigest
 
 class AuthManager {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    // Register - Şifre Firestore'da da sakla
+    // Şifre hash'leme fonksiyonu (SHA-256)
+    private fun hashPassword(password: String): String {
+        val bytes = password.toByteArray()
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(bytes)
+        return digest.fold("") { str, it -> str + "%02x".format(it) }
+    }
+
+    // Register - Şifre hash'lenerek Firestore'da saklanır
     suspend fun signUp(
         email: String,
         password: String,
@@ -22,11 +31,14 @@ class AuthManager {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val userId = authResult.user?.uid ?: return Result.failure(Exception("User ID not found"))
 
-            // Firestore'da user dökümanı oluştur (şifreyi de sakla)
+            // Şifreyi hash'le
+            val hashedPassword = hashPassword(password)
+
+            // Firestore'da user dökümanı oluştur (hash'lenmiş şifreyi sakla)
             val userData = hashMapOf(
                 "uid" to userId,
                 "email" to email,
-                "password" to password,  //  ŞİFRE BURAYA KAYDEDILIYOR
+                "passwordHash" to hashedPassword,  // ŞİFRE HASH'LENMİŞ HALİYLE SAKLANIR
                 "name" to name,
                 "userType" to userType,
                 "createdAt" to System.currentTimeMillis()
@@ -70,9 +82,13 @@ class AuthManager {
     // Şifre sıfırlama
     suspend fun resetPassword(email: String): Result<Unit> {
         return try {
+            android.util.Log.d("AuthManager", "Attempting to send password reset email to: $email")
             auth.sendPasswordResetEmail(email).await()
+            android.util.Log.d("AuthManager", "Password reset email sent successfully to: $email")
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("AuthManager", "Failed to send password reset email to: $email", e)
+            android.util.Log.e("AuthManager", "Error details: ${e.message}")
             Result.failure(e)
         }
     }

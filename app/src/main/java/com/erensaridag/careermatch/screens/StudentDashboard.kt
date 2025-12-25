@@ -62,7 +62,7 @@ fun StudentDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
                 },
                 onFailure = { error ->
                     isLoading = false
-                    Toast.makeText(context, "Staj ilanları yüklenemedi: ${error.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Could not load internship postings: ${error.message}", Toast.LENGTH_SHORT).show()
                 }
             )
 
@@ -118,7 +118,7 @@ fun StudentDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
                                     onFailure = { error ->
                                         Toast.makeText(
                                             context,
-                                            error.message ?: "Başvuru başarısız",
+                                            error.message ?: "Application failed",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     }
@@ -170,7 +170,7 @@ fun JobListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Mevcut Staj İlanları",
+                        text = "Available Internships",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -192,7 +192,7 @@ fun JobListScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Assignment,
-                                    contentDescription = "Başvurularım"
+                                    contentDescription = "My Applications"
                                 )
                             }
                         }
@@ -201,14 +201,14 @@ fun JobListScreen(
                     IconButton(onClick = onNavigateToProfile) {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = "Profil"
+                            contentDescription = "Profile"
                         )
                     }
                     
                     IconButton(onClick = onLogout) {
                         Icon(
                             imageVector = Icons.Default.Logout,
-                            contentDescription = "Çıkış Yap"
+                            contentDescription = "Logout"
                         )
                     }
                 },
@@ -224,6 +224,7 @@ fun JobListScreen(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .navigationBarsPadding()
         ) {
             // Search Bar
             Surface(
@@ -237,7 +238,7 @@ fun JobListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    placeholder = { Text("Staj ara...") },
+                    placeholder = { Text("Search internships...") },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -250,7 +251,7 @@ fun JobListScreen(
                             IconButton(onClick = { onSearchQueryChange("") }) {
                                 Icon(
                                     imageVector = Icons.Default.Clear,
-                                    contentDescription = "Aramayı temizle"
+                                    contentDescription = "Clear search"
                                 )
                             }
                         }
@@ -307,9 +308,9 @@ fun JobListScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = if (searchQuery.isNotEmpty()) 
-                                    "\"$searchQuery\" ile eşleşen staj ilanı bulunamadı" 
+                                    "No internship postings found matching \"$searchQuery\"" 
                                 else 
-                                    "Mevcut staj ilanı yok",
+                                    "No internship postings available",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = LightText
                             )
@@ -323,7 +324,7 @@ fun JobListScreen(
                         ) {
                             item {
                                 Text(
-                                    text = "${filteredInternships.size} ${if (filteredInternships.size == 1) "staj ilanı" else "staj ilanı"} bulundu",
+                                    text = "${filteredInternships.size} ${if (filteredInternships.size == 1) "internship posting" else "internship postings"} found",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = LightText,
                                     modifier = Modifier.padding(bottom = 8.dp)
@@ -464,12 +465,12 @@ fun JobDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Staj Detayları", fontWeight = FontWeight.Bold) },
+                title = { Text("Internship Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Geri"
+                            contentDescription = "Back"
                         )
                     }
                 },
@@ -559,7 +560,7 @@ fun JobDetailScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
-                                        text = "Konum",
+                                        text = "Location",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = LightText
                                     )
@@ -592,7 +593,7 @@ fun JobDetailScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
-                                        text = "Maaş",
+                                        text = "Salary",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = LightText
                                     )
@@ -627,7 +628,7 @@ fun JobDetailScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                     Text(
-                                        text = "Süre",
+                                        text = "Duration",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = LightText
                                     )
@@ -643,7 +644,7 @@ fun JobDetailScreen(
                     
                     // Description
                     DetailSection(
-                        title = "Pozisyon Hakkında",
+                        title = "About the Position",
                         icon = Icons.Default.Description,
                         content = internship.description
                     )
@@ -657,7 +658,9 @@ fun JobDetailScreen(
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .navigationBarsPadding()
                 ) {
                     // Success Message
                     AnimatedVisibility(
@@ -686,7 +689,7 @@ fun JobDetailScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = "Başvuru başarıyla gönderildi!",
+                                    text = "Application submitted successfully!",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = DarkText
@@ -716,7 +719,7 @@ fun JobDetailScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Başvuruldu",
+                                text = "Applied",
                                 style = MaterialTheme.typography.labelLarge
                             )
                         }
@@ -739,7 +742,7 @@ fun JobDetailScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Hemen Başvur",
+                                text = "Apply Now",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )
@@ -830,7 +833,7 @@ fun MyApplicationsScreen(
                     },
                     onFailure = {
                         isLoading = false
-                        Toast.makeText(context, "Başvurular yüklenemedi", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Could not load applications", Toast.LENGTH_SHORT).show()
                     }
                 )
             } else {
@@ -842,10 +845,10 @@ fun MyApplicationsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Başvurularım", fontWeight = FontWeight.Bold) },
+                title = { Text("My Applications", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -860,6 +863,7 @@ fun MyApplicationsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .navigationBarsPadding()
         ) {
             when {
                 isLoading -> {
@@ -886,13 +890,13 @@ fun MyApplicationsScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Henüz başvuru yok",
+                            text = "No applications yet",
                             style = MaterialTheme.typography.bodyLarge,
                             color = LightText
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Stajlara başvurmaya başla!",
+                            text = "Start applying to internships!",
                             style = MaterialTheme.typography.bodyMedium,
                             color = LightText.copy(alpha = 0.7f)
                         )
@@ -906,7 +910,7 @@ fun MyApplicationsScreen(
                     ) {
                         item {
                             Text(
-                                text = "${applications.size} ${if (applications.size == 1) "başvuru" else "başvuru"}",
+                                text = "${applications.size} ${if (applications.size == 1) "application" else "applications"}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = LightText,
                                 modifier = Modifier.padding(bottom = 8.dp)
@@ -915,6 +919,10 @@ fun MyApplicationsScreen(
                         
                         items(applications, key = { it.id }) { application ->
                             ApplicationCard(application = application)
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
@@ -994,7 +1002,7 @@ fun ApplicationCard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Başvuru Tarihi: ${formatDate(application.appliedAt)}",
+                    text = "Application Date: ${formatDate(application.appliedAt)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = LightText
                 )
@@ -1009,22 +1017,22 @@ fun StatusBadge(status: String) {
         "pending" -> Triple(
             WarningColor.copy(alpha = 0.1f),
             WarningColor,
-            "Beklemede"
+            "Pending"
         )
         "accepted" -> Triple(
             SuccessColor.copy(alpha = 0.1f),
             SuccessColor,
-            "Kabul Edildi"
+            "Accepted"
         )
         "rejected" -> Triple(
             ErrorColor.copy(alpha = 0.1f),
             ErrorColor,
-            "Reddedildi"
+            "Rejected"
         )
         else -> Triple(
             LightText.copy(alpha = 0.1f),
             LightText,
-            "Bilinmiyor"
+            "Unknown"
         )
     }
     
@@ -1052,9 +1060,9 @@ fun formatDate(timestamp: Long): String {
     val days = hours / 24
     
     return when {
-        days > 0 -> "$days ${if (days == 1L) "gün" else "gün"} önce"
-        hours > 0 -> "$hours ${if (hours == 1L) "saat" else "saat"} önce"
-        minutes > 0 -> "$minutes ${if (minutes == 1L) "dakika" else "dakika"} önce"
-        else -> "Az önce"
+        days > 0 -> "$days ${if (days == 1L) "day" else "days"} ago"
+        hours > 0 -> "$hours ${if (hours == 1L) "hour" else "hours"} ago"
+        minutes > 0 -> "$minutes ${if (minutes == 1L) "minute" else "minutes"} ago"
+        else -> "Just now"
     }
 }

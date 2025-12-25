@@ -1,5 +1,6 @@
 package com.erensaridag.careermatch.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.erensaridag.careermatch.data.Internship
+import com.erensaridag.careermatch.firebase.ApplicationManager
 import com.erensaridag.careermatch.firebase.InternshipManager
 import com.erensaridag.careermatch.ui.theme.*
 import com.google.firebase.auth.FirebaseAuth
@@ -43,6 +45,7 @@ fun CompanyDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
 
     var currentScreen by remember { mutableStateOf("Dashboard") }
     var selectedInternship by remember { mutableStateOf<Internship?>(null) }
+    var applicantsBackScreen by remember { mutableStateOf("Details") }
     var internships by remember { mutableStateOf<List<Internship>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var refreshTrigger by remember { mutableStateOf(0) }
@@ -57,7 +60,7 @@ fun CompanyDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
                     internships = list
                 },
                 onFailure = { e ->
-                    Toast.makeText(context, "İlanlar yüklenirken hata oluştu: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Error loading job postings: ${e.message}", Toast.LENGTH_LONG).show()
                     internships = emptyList()
                 }
             )
@@ -78,8 +81,20 @@ fun CompanyDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
                 },
                 onPostJobClick = { currentScreen = "PostJob" },
                 onManageJobsClick = { currentScreen = "ManageJobs" },
+                onViewAllApplicationsClick = { currentScreen = "AllApplications" },
                 onLogout = onLogout,
                 onNavigateToProfile = { currentScreen = "Profile" }
+            )
+        }
+        "AllApplications" -> {
+            AllApplicationsScreen(
+                internships = internships,
+                onBack = { currentScreen = "Dashboard" },
+                onInternshipClick = { internship ->
+                    selectedInternship = internship
+                    applicantsBackScreen = "AllApplications"
+                    currentScreen = "Applicants"
+                }
             )
         }
         "Details" -> {
@@ -87,7 +102,10 @@ fun CompanyDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
                 InternshipDetailsScreen(
                     internship = selectedInternship!!,
                     onBack = { currentScreen = "Dashboard" },
-                    onViewApplicants = { currentScreen = "Applicants" }
+                    onViewApplicants = {
+                        applicantsBackScreen = "Details"
+                        currentScreen = "Applicants"
+                    }
                 )
             }
         }
@@ -95,7 +113,7 @@ fun CompanyDashboard(onLogout: () -> Unit, onNavigateToProfile: () -> Unit) {
             if (selectedInternship != null) {
                 ApplicantsScreen(
                     internship = selectedInternship!!,
-                    onBack = { currentScreen = "Details" }
+                    onBack = { currentScreen = applicantsBackScreen }
                 )
             }
         }
@@ -152,12 +170,65 @@ fun DashboardView(
     onInternshipClick: (Internship) -> Unit,
     onPostJobClick: () -> Unit,
     onManageJobsClick: () -> Unit,
+    onViewAllApplicationsClick: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToProfile: () -> Unit
 ) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
     val companyName = auth.currentUser?.email?.substringBefore("@") ?: "Company"
+    val scope = rememberCoroutineScope()
+    val applicationManager = remember { ApplicationManager() }
+
+    var totalApplicationsCount by remember { mutableStateOf(0) }
+    var applicationCountsByInternshipId by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var hasShownCountErrorToast by remember { mutableStateOf(false) }
+
+    LaunchedEffect(internships) {
+        scope.launch {
+            val internshipIds = internships.map { it.id }
+            Log.d("CompanyDashboard", "Loading application counts. internshipIds=$internshipIds")
+
+            // Total applications count
+            val totalResult = applicationManager.getTotalApplicationsCountForInternships(internshipIds)
+            totalResult.fold(
+                onSuccess = {
+                    totalApplicationsCount = it
+                    Log.d("CompanyDashboard", "Total applications count=$it")
+                },
+                onFailure = { e ->
+                    totalApplicationsCount = 0
+                    Log.e("CompanyDashboard", "Failed to load total applications count", e)
+                    Toast.makeText(context, "Applications count error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            )
+
+            // Per internship counts
+            val countsMap = mutableMapOf<String, Int>()
+            internships.forEach { internship ->
+                val countResult = applicationManager.getInternshipApplicationCount(internship.id)
+                countResult.fold(
+                    onSuccess = { count ->
+                        countsMap[internship.id] = count
+                        Log.d("CompanyDashboard", "internshipId=${internship.id} applicationCount=$count")
+                    },
+                    onFailure = { e ->
+                        countsMap[internship.id] = 0
+                        Log.e(
+                            "CompanyDashboard",
+                            "Failed to load application count for internshipId=${internship.id}",
+                            e
+                        )
+                        if (!hasShownCountErrorToast) {
+                            hasShownCountErrorToast = true
+                            Toast.makeText(context, "Application query failed: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+            applicationCountsByInternshipId = countsMap
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -165,7 +236,7 @@ fun DashboardView(
                 title = {
                     Column {
                         Text(
-                            text = "Panel",
+                            text = "Dashboard",
                             fontWeight = FontWeight.Bold
                         )
                         Text(
@@ -179,13 +250,13 @@ fun DashboardView(
                     IconButton(onClick = onNavigateToProfile) {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = "Profil"
+                            contentDescription = "Profile"
                         )
                     }
                     IconButton(onClick = onLogout) {
                         Icon(
                             imageVector = Icons.Default.Logout,
-                            contentDescription = "Çıkış Yap"
+                            contentDescription = "Logout"
                         )
                     }
                 },
@@ -222,13 +293,13 @@ fun DashboardView(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Tekrar hoş geldiniz!",
+                        text = "Welcome back!",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "Staj ilanlarınızı ve başvurularınızı yönetin",
+                        text = "Manage your internship postings and applications",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.8f)
                     )
@@ -247,21 +318,22 @@ fun DashboardView(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     StatCard(
-                        title = "Yayınlanan İlanlar",
+                        title = "Published Posts",
                         value = internships.size.toString(),
                         icon = Icons.Default.Work,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        containerColor = PrimaryGradientStart.copy(alpha = 0.12f),
+                        contentColor = PrimaryGradientStart,
                         modifier = Modifier.weight(1f)
                     )
 
                     StatCard(
-                        title = "Başvurular",
-                        value = "0",
+                        title = "Applications",
+                        value = totalApplicationsCount.toString(),
                         icon = Icons.Default.People,
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.weight(1f)
+                        containerColor = PrimaryGradientEnd.copy(alpha = 0.12f),
+                        contentColor = PrimaryGradientEnd,
+                        modifier = Modifier.weight(1f),
+                        onClick = onViewAllApplicationsClick
                     )
                 }
 
@@ -269,7 +341,7 @@ fun DashboardView(
 
                 // Quick Actions
                 Text(
-                    text = "Hızlı İşlemler",
+                    text = "Quick Actions",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -300,7 +372,7 @@ fun DashboardView(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Yeni İlan Yayınla",
+                                text = "Post New Job",
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -323,7 +395,7 @@ fun DashboardView(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "İlanları Yönet",
+                                text = "Manage Postings",
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -351,13 +423,13 @@ fun DashboardView(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "İpucu",
+                                text = "Tip",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                             Text(
-                                text = "En iyi adayları çekmek için detaylı iş tanımları yayınlayın!",
+                                text = "Post detailed job descriptions to attract the best candidates!",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
@@ -370,7 +442,7 @@ fun DashboardView(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = "Staj İlanlarınız",
+                        text = "Your Internship Postings",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -382,6 +454,7 @@ fun DashboardView(
                         items(internships) { internship ->
                             SimpleInternshipCard(
                                 internship = internship,
+                                applicationCount = applicationCountsByInternshipId[internship.id] ?: 0,
                                 onClick = { onInternshipClick(internship) }
                             )
                         }
@@ -401,6 +474,8 @@ fun DashboardView(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -412,10 +487,13 @@ private fun StatCard(
     icon: ImageVector,
     containerColor: Color,
     contentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.then(
+            if (onClick != null) Modifier.clickable { onClick() } else Modifier
+        ),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -448,6 +526,7 @@ private fun StatCard(
 @Composable
 fun SimpleInternshipCard(
     internship: Internship,
+    applicationCount: Int,
     onClick: () -> Unit
 ) {
     Card(
@@ -499,7 +578,7 @@ fun SimpleInternshipCard(
                     color = SuccessColor.copy(alpha = 0.15f)
                 ) {
                     Text(
-                        text = "Aktif",
+                        text = "Active",
                         fontSize = 11.sp,
                         color = SuccessColor,
                         fontWeight = FontWeight.Bold,
@@ -529,7 +608,7 @@ fun SimpleInternshipCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "0 Başvuru",
+                        text = "$applicationCount Applications",
                         fontSize = 13.sp,
                         color = PrimaryGradientStart,
                         fontWeight = FontWeight.SemiBold
@@ -721,7 +800,7 @@ fun PremiumInternshipCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Aktif",
+                            text = "Active",
                             fontSize = 11.sp,
                             color = SuccessColor,
                             fontWeight = FontWeight.Bold
@@ -752,7 +831,7 @@ fun PremiumInternshipCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "0 Başvuru",
+                        text = "0 Applications",
                         fontSize = 13.sp,
                         color = PrimaryGradientStart,
                         fontWeight = FontWeight.SemiBold
@@ -823,13 +902,13 @@ fun EmptyStateView(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Henüz staj ilanı yok",
+                    text = "No internship postings yet",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = DarkText
                 )
                 Text(
-                    text = "İlk staj ilanınızı oluşturarak başlayın",
+                    text = "Start by creating your first internship posting",
                     fontSize = 14.sp,
                     color = LightText
                 )
@@ -857,7 +936,7 @@ fun EmptyStateView(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Staj İlanı Oluştur",
+                        text = "Create Internship Posting",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -881,7 +960,7 @@ fun EmptyStateView(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Stajları Yönet",
+                        text = "Manage Internships",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -937,7 +1016,7 @@ fun InternshipDetailsScreen(
                         ) {
                             Icon(
                                 Icons.Default.ArrowBack,
-                                contentDescription = "Geri",
+                                contentDescription = "Back",
                                 tint = DarkText,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -945,7 +1024,7 @@ fun InternshipDetailsScreen(
                     }
                     
                     Text(
-                        text = "Staj Detayları",
+                        text = "Internship Details",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkText
@@ -982,10 +1061,10 @@ fun InternshipDetailsScreen(
                             
                             Spacer(modifier = Modifier.height(16.dp))
                             
-                            DetailRowPremium("Şirket", internship.company, Icons.Default.Business)
-                            DetailRowPremium("Konum", internship.location, Icons.Default.LocationOn)
-                            DetailRowPremium("Maaş", internship.salary, Icons.Default.AttachMoney)
-                            DetailRowPremium("Süre", "${internship.duration} ay", Icons.Default.Schedule)
+                            DetailRowPremium("Company", internship.company, Icons.Default.Business)
+                            DetailRowPremium("Location", internship.location, Icons.Default.LocationOn)
+                            DetailRowPremium("Salary", internship.salary, Icons.Default.AttachMoney)
+                            DetailRowPremium("Duration", "${internship.duration} months", Icons.Default.Schedule)
                         }
                     }
                 }
@@ -1003,7 +1082,7 @@ fun InternshipDetailsScreen(
                                 .padding(20.dp)
                         ) {
                             Text(
-                                text = "Açıklama",
+                                text = "Description",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = DarkText
@@ -1038,7 +1117,7 @@ fun InternshipDetailsScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Başvuruları Gör",
+                            text = "View Applications",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -1097,108 +1176,396 @@ fun DetailRowPremium(label: String, value: String, icon: ImageVector) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApplicantsScreen(
     internship: Internship,
     onBack: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(CardBackground)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val applicationManager = remember { com.erensaridag.careermatch.firebase.ApplicationManager() }
+    
+    var applicants by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    
+    // Load applicants
+    LaunchedEffect(internship.id) {
+        scope.launch {
+            val result = applicationManager.getInternshipApplicantsWithDetails(internship.id)
+            result.fold(
+                onSuccess = { list ->
+                    applicants = list
+                    isLoading = false
+                },
+                onFailure = { e ->
+                    Toast.makeText(context, "Error loading applicants: ${e.message}", Toast.LENGTH_SHORT).show()
+                    isLoading = false
+                }
+            )
+        }
+    }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Applications", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = PrimaryGradientStart,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .navigationBarsPadding()
+                .background(CardBackground)
         ) {
-            // Premium Header
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 2.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        onClick = onBack,
-                        shape = CircleShape,
-                        color = PrimaryGradientStart.copy(alpha = 0.1f),
-                        modifier = Modifier.size(44.dp)
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                Icons.Default.ArrowBack,
-                                contentDescription = "Geri",
-                                tint = PrimaryGradientStart,
-                                modifier = Modifier.size(22.dp)
+                        CircularProgressIndicator(color = PrimaryGradientStart)
+                    }
+                }
+                applicants.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.People,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = LightText.copy(alpha = 0.5f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No applications yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = LightText
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Applications for ${internship.title} will appear here",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = LightText.copy(alpha = 0.7f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            Text(
+                                text = "${applicants.size} ${if (applicants.size == 1) "application" else "applications"} for ${internship.title}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = LightText,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
                         }
-                    }
-                    
-                    Text(
-                        text = "Başvurular",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkText
-                    )
-                    
-                    Spacer(modifier = Modifier.width(44.dp))
-                }
-            }
+                        
+                        items(applicants.size) { index ->
+                            ApplicantCard(applicant = applicants[index])
+                        }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Text(
-                        text = "${internship.title} için başvurular",
-                        fontSize = 14.sp,
-                        color = LightText,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                CircularProgressIndicator(
-                                    color = PrimaryGradientStart,
-                                    strokeWidth = 3.dp
-                                )
-                                Text(
-                                    text = "Başvurular yükleniyor...",
-                                    fontSize = 14.sp,
-                                    color = LightText
-                                )
-                            }
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ApplicantCard(
+    applicant: Map<String, Any>,
+    modifier: Modifier = Modifier
+) {
+    val studentName = applicant["studentName"] as? String ?: "Unknown"
+    val studentEmail = applicant["studentEmail"] as? String ?: ""
+    val studentPhone = applicant["studentPhone"] as? String ?: ""
+    val studentUniversity = applicant["studentUniversity"] as? String ?: ""
+    val studentMajor = applicant["studentMajor"] as? String ?: ""
+    val studentGraduationYear = applicant["studentGraduationYear"] as? String ?: ""
+    val studentCvUrl = applicant["studentCvUrl"] as? String ?: ""
+    val appliedAt = applicant["appliedAt"] as? Long ?: 0L
+    val status = applicant["status"] as? String ?: "pending"
+    val context = LocalContext.current
+    
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Avatar
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = studentName.firstOrNull()?.uppercase() ?: "?",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column {
+                        Text(
+                            text = studentName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkText
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = formatApplicationDate(appliedAt),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = LightText
+                        )
+                    }
+                }
+                
+                // Status Badge
+                ApplicantStatusBadge(status = status)
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Divider(color = DividerColor)
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Education Information
+            if (studentUniversity.isNotEmpty() || studentMajor.isNotEmpty()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.School,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = PrimaryGradientStart
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        if (studentUniversity.isNotEmpty()) {
+                            Text(
+                                text = studentUniversity,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = DarkText
+                            )
+                        }
+                        if (studentMajor.isNotEmpty()) {
+                            Text(
+                                text = studentMajor + if (studentGraduationYear.isNotEmpty()) " • Class of $studentGraduationYear" else "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = LightText
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
+            // Contact Information
+            if (studentEmail.isNotEmpty()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Email,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = PrimaryGradientStart
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = studentEmail,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = DarkText
+                    )
+                }
+            }
+            
+            if (studentPhone.isNotEmpty()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = PrimaryGradientStart
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = studentPhone,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = DarkText
+                    )
+                }
+            }
+            
+            // CV Link
+            if (studentCvUrl.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(studentCvUrl))
+                            context.startActivity(intent)
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor = PrimaryGradientStart.copy(alpha = 0.1f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Description,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = PrimaryGradientStart
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "View CV / Resume",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PrimaryGradientStart
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.OpenInNew,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = PrimaryGradientStart
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ApplicantStatusBadge(status: String) {
+    val (backgroundColor, textColor, statusText) = when (status) {
+        "pending" -> Triple(
+            WarningColor.copy(alpha = 0.15f),
+            WarningColor,
+            "Pending"
+        )
+        "accepted" -> Triple(
+            SuccessColor.copy(alpha = 0.15f),
+            SuccessColor,
+            "Accepted"
+        )
+        "rejected" -> Triple(
+            ErrorColor.copy(alpha = 0.15f),
+            ErrorColor,
+            "Rejected"
+        )
+        else -> Triple(
+            LightText.copy(alpha = 0.15f),
+            LightText,
+            "Unknown"
+        )
+    }
+    
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = backgroundColor
+    ) {
+        Text(
+            text = statusText,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = textColor
+        )
+    }
+}
+
+fun formatApplicationDate(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+    
+    val seconds = diff / 1000
+    val minutes = seconds / 60
+    val hours = minutes / 60
+    val days = hours / 24
+    
+    return when {
+        days > 0 -> "$days ${if (days == 1L) "day" else "days"} ago"
+        hours > 0 -> "$hours ${if (hours == 1L) "hour" else "hours"} ago"
+        minutes > 0 -> "$minutes ${if (minutes == 1L) "minute" else "minutes"} ago"
+        else -> "Just now"
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1225,10 +1592,10 @@ fun PostJobScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "İlanı Düzenle" else "Yeni İlan Yayınla", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isEditing) "Edit Posting" else "Post New Job", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -1243,6 +1610,8 @@ fun PostJobScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .imePadding()
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -1250,7 +1619,7 @@ fun PostJobScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("İş Başlığı") },
+                label = { Text("Job Title") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -1269,7 +1638,7 @@ fun PostJobScreen(
             OutlinedTextField(
                 value = location,
                 onValueChange = { location = it },
-                label = { Text("Konum") },
+                label = { Text("Location") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -1289,7 +1658,7 @@ fun PostJobScreen(
                 OutlinedTextField(
                     value = duration,
                     onValueChange = { duration = it },
-                    label = { Text("Süre") },
+                    label = { Text("Duration") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1308,7 +1677,7 @@ fun PostJobScreen(
                 OutlinedTextField(
                     value = salary,
                     onValueChange = { salary = it },
-                    label = { Text("Maaş") },
+                    label = { Text("Salary") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1328,7 +1697,7 @@ fun PostJobScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Açıklama") },
+                label = { Text("Description") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp),
@@ -1352,7 +1721,7 @@ fun PostJobScreen(
             Button(
                 onClick = {
                     if (title.isBlank() || location.isBlank() || duration.isBlank() || salary.isBlank() || description.isBlank()) {
-                        Toast.makeText(context, "Lütfen tüm alanları doldurun", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
 
@@ -1387,11 +1756,11 @@ fun PostJobScreen(
 
                             result.fold(
                                 onSuccess = {
-                                    Toast.makeText(context, if (isEditing) "İlan başarıyla güncellendi" else "İlan başarıyla yayınlandı", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, if (isEditing) "Posting updated successfully" else "Posting published successfully", Toast.LENGTH_SHORT).show()
                                     onJobPosted()
                                 },
                                 onFailure = { e ->
-                                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                                     isSubmitting = false
                                 }
                             )
@@ -1408,7 +1777,7 @@ fun PostJobScreen(
                 if (isSubmitting) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text(if (isEditing) "İlanı Güncelle" else "İlanı Yayınla", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(if (isEditing) "Update Posting" else "Publish Posting", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1436,10 +1805,10 @@ fun ManageJobsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("İlanları Yönet", fontWeight = FontWeight.Bold) },
+                title = { Text("Manage Postings", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -1454,6 +1823,7 @@ fun ManageJobsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .navigationBarsPadding()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -1486,7 +1856,7 @@ fun ManageJobsScreen(
                             TextButton(onClick = { onEdit(internship) }) {
                                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Düzenle")
+                                Text("Edit")
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             TextButton(
@@ -1495,7 +1865,7 @@ fun ManageJobsScreen(
                             ) {
                                 Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Sil")
+                                Text("Delete")
                             }
                         }
                     }
@@ -1519,7 +1889,7 @@ fun ManageJobsScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Henüz ilan yayınlanmadı",
+                                text = "No postings published yet",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = Color.Gray
                             )
@@ -1532,8 +1902,8 @@ fun ManageJobsScreen(
         if (showDeleteDialog != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = null },
-                title = { Text("İlanı Sil") },
-                text = { Text("Bu ilanı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.") },
+                title = { Text("Delete Posting") },
+                text = { Text("Are you sure you want to delete this posting? This action cannot be undone.") },
                 confirmButton = {
                     Button(
                         onClick = {
@@ -1544,26 +1914,280 @@ fun ManageJobsScreen(
                                     onSuccess = {
                                         list = list.filter { it.id != idToDelete }
                                         onDelete(idToDelete) // Optional callback if parent needs to know
-                                        Toast.makeText(context, "İlan silindi", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Posting deleted", Toast.LENGTH_SHORT).show()
                                         showDeleteDialog = null
                                     },
                                     onFailure = { e ->
-                                        Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = WarningColor)
                     ) {
-                        Text("Sil")
+                        Text("Delete")
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteDialog = null }) {
-                        Text("İptal")
+                        Text("Cancel")
                     }
                 }
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AllApplicationsScreen(
+    internships: List<Internship>,
+    onBack: () -> Unit,
+    onInternshipClick: (Internship) -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val applicationManager = remember { com.erensaridag.careermatch.firebase.ApplicationManager() }
+    
+    var allApplications by remember { mutableStateOf<Map<String, List<Map<String, Any>>>>(emptyMap()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var totalApplicationsCount by remember { mutableStateOf(0) }
+    
+    // Load all applications for all internships
+    LaunchedEffect(internships) {
+        scope.launch {
+            isLoading = true
+            val applicationsMap = mutableMapOf<String, List<Map<String, Any>>>()
+            var total = 0
+            
+            internships.forEach { internship ->
+                val result = applicationManager.getInternshipApplicantsWithDetails(internship.id)
+                result.fold(
+                    onSuccess = { applicants ->
+                        if (applicants.isNotEmpty()) {
+                            applicationsMap[internship.id] = applicants
+                            total += applicants.size
+                        }
+                    },
+                    onFailure = { e ->
+                        android.util.Log.e("AllAppsScreen", "Error loading apps: ${e.message}", e)
+                        // Toast showing on main thread might be tricky here without context, relying on Log
+                    }
+                )
+            }
+            
+            if (applicationsMap.isEmpty() && total == 0 && internships.isNotEmpty()) {
+                 android.util.Log.d("AllAppsScreen", "No applications found for ${internships.size} internships")
+            }
+            
+            allApplications = applicationsMap
+            totalApplicationsCount = total
+            isLoading = false
+        }
+    }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("All Applications", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = PrimaryGradientStart,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .navigationBarsPadding()
+                .background(CardBackground)
+        ) {
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = PrimaryGradientStart)
+                    }
+                }
+                totalApplicationsCount == 0 -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.People,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = LightText.copy(alpha = 0.5f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No applications yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = LightText
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Applications will appear here when students apply to your internships",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = LightText.copy(alpha = 0.7f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = PrimaryGradientStart.copy(alpha = 0.1f)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Total Applications",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = DarkText
+                                        )
+                                        Text(
+                                            text = "$totalApplicationsCount",
+                                            style = MaterialTheme.typography.headlineMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = PrimaryGradientStart
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.People,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = PrimaryGradientStart.copy(alpha = 0.3f)
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Group applications by internship
+                        allApplications.forEach { (internshipId, applicants) ->
+                            val internship = internships.find { it.id == internshipId }
+                            if (internship != null) {
+                                item {
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { onInternshipClick(internship) },
+                                        shape = RoundedCornerShape(16.dp),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = internship.title,
+                                                        fontSize = 16.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = DarkText
+                                                    )
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.LocationOn,
+                                                            contentDescription = null,
+                                                            tint = LightText,
+                                                            modifier = Modifier.size(14.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text(
+                                                            text = internship.location,
+                                                            fontSize = 13.sp,
+                                                            color = LightText
+                                                        )
+                                                    }
+                                                }
+                                                
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = PrimaryGradientStart.copy(alpha = 0.15f)
+                                                ) {
+                                                    Text(
+                                                        text = "${applicants.size} ${if (applicants.size == 1) "application" else "applications"}",
+                                                        fontSize = 11.sp,
+                                                        color = PrimaryGradientStart,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                                    )
+                                                }
+                                            }
+                                            
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.End,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "View Details",
+                                                    fontSize = 13.sp,
+                                                    color = PrimaryGradientStart,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Icon(
+                                                    Icons.Default.ChevronRight,
+                                                    contentDescription = null,
+                                                    tint = PrimaryGradientStart,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            }
         }
     }
 }
